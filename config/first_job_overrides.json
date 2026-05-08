@@ -1,0 +1,28 @@
+{
+  "_comment": "Persistent overrides loaded on every dashboard refresh. Keys for exact-name maps should be lowercase.",
+  "org_name_overrides": {
+    "usda-ars": "USDA Agricultural Research Service",
+    "international business machines corp.": "IBM",
+    "international business machines corp": "IBM"
+  },
+  "classification_exact_overrides": {
+    "national institutes of health": {
+      "org_type": "Government Lab",
+      "source": "override_exact_nih",
+      "confidence": "high"
+    },
+    "centers for disease control & prevention": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_cdc",
+      "confidence": "high"
+    }
+  },
+  "classification_regex_overrides": [
+    {
+      "pattern": "\\bfred hutch(?:inson)?\\b",
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_regex_fred_hutch",
+      "confidence": "high"
+    }
+  ]
+}
