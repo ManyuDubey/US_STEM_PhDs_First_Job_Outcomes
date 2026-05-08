@@ -655,6 +655,27 @@ def top_orgs_by_group(
     return out
 
 
+def org_year_counts_by_group(
+    rows: List[Dict[str, str]],
+    group_field: str,
+    exclude_values: Sequence[str] | None = None,
+) -> Dict[str, Dict[int, Dict[str, int]]]:
+    excluded = set(exclude_values or [])
+    counts: Dict[str, Dict[int, Dict[str, int]]] = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+    for row in rows:
+        group = (row.get(group_field) or "").strip()
+        year = to_int(row.get("grad_year"))
+        if not group or group in excluded or year is None:
+            continue
+        if year > 2024:
+            continue
+        org = best_org_name(row)
+        if not org:
+            continue
+        counts[group][year][org] += 1
+    return counts
+
+
 def slugify(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")
 
@@ -1020,6 +1041,8 @@ def build_dashboard_payload(
     major_year_aggregate: Dict[str, Dict[int, Dict[str, int]]],
     broad_top_orgs: Dict[str, List[Dict[str, object]]],
     major_top_orgs: Dict[str, List[Dict[str, object]]],
+    broad_org_year_counts: Dict[str, Dict[int, Dict[str, int]]],
+    major_org_year_counts: Dict[str, Dict[int, Dict[str, int]]],
     categories: Sequence[str],
 ) -> Dict[str, object]:
     years = sorted(yearly_aggregate)
@@ -1084,6 +1107,7 @@ def build_dashboard_payload(
             "slug": slugify(field),
             "series": series_list,
             "top_orgs": broad_top_orgs.get(field, []),
+            "org_year_counts": broad_org_year_counts.get(field, {}),
         })
 
     major_fields = []
@@ -1106,6 +1130,7 @@ def build_dashboard_payload(
             "slug": slugify(field),
             "series": series_list,
             "top_orgs": major_top_orgs.get(field, []),
+            "org_year_counts": major_org_year_counts.get(field, {}),
         })
 
     return {
@@ -1267,17 +1292,6 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
       text-align: left;
       color: var(--muted);
       font-weight: 600;
-    }}
-    .split {{
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) 380px;
-      gap: 20px;
-      align-items: start;
-    }}
-    @media (max-width: 1200px) {{
-      .split {{
-        grid-template-columns: 1fr;
-      }}
     }}
   </style>
 </head>
@@ -1493,19 +1507,42 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
       }});
     }}
 
-    function renderTopOrgs(container, fieldName, items) {{
+    function topOrgsForRange(orgYearCounts, yearRange, topN = 10) {{
+      const totals = new Map();
+      const [startYear, endYear] = yearRange;
+      Object.entries(orgYearCounts || {{}}).forEach(([yearText, orgCounts]) => {{
+        const year = Number(yearText);
+        if (year < startYear || year > endYear) return;
+        Object.entries(orgCounts || {{}}).forEach(([org, count]) => {{
+          totals.set(org, (totals.get(org) || 0) + Number(count || 0));
+        }});
+      }});
+      return [...totals.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .slice(0, topN)
+        .map(([name, count]) => ({{ name, count }}));
+    }}
+
+    function renderTopOrgs(container, fieldName, orgYearCounts, yearRange) {{
+      const items = topOrgsForRange(orgYearCounts, yearRange, 10);
       const card = document.createElement('div');
       card.className = 'card';
-      card.innerHTML = `<div class="title">Top 10 Organizations: ${{fieldName}}</div><div class="subtitle">Largest organizations in the matched first-job file for the selected field. No time split.</div>`;
+      card.innerHTML = `<div class="title">Top 10 Organizations: ${{fieldName}}</div><div class="subtitle">Largest organizations in the matched first-job file for the selected field within the selected year window. This table updates with the sliders.</div>`;
       const table = document.createElement('table');
       table.className = 'rank';
       table.innerHTML = '<thead><tr><th style="width:50px;">Rank</th><th>Organization</th><th style="width:90px;">Count</th></tr></thead>';
       const tbody = document.createElement('tbody');
-      (items || []).forEach((item, idx) => {{
+      if (!items.length) {{
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${{idx + 1}}</td><td>${{item.name}}</td><td>${{Number(item.count).toLocaleString()}}</td>`;
+        tr.innerHTML = '<td colspan="3">No organizations in the selected year range.</td>';
         tbody.appendChild(tr);
-      }});
+      }} else {{
+        items.forEach((item, idx) => {{
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${{idx + 1}}</td><td>${{item.name}}</td><td>${{Number(item.count).toLocaleString()}}</td>`;
+          tbody.appendChild(tr);
+        }});
+      }}
       table.appendChild(tbody);
       card.appendChild(table);
       container.appendChild(card);
@@ -1626,21 +1663,14 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
       const selected = currentCollection().find((item) => item.slug === fieldSelect.value) || currentCollection()[0];
       if (!selected) return;
       const fieldType = viewSelect.value === 'broad' ? 'NSF broad field' : 'NSF major field';
-      const split = document.createElement('div');
-      split.className = 'split';
-      const left = document.createElement('div');
-      const right = document.createElement('div');
-      split.appendChild(left);
-      split.appendChild(right);
-      host.appendChild(split);
       renderChart(
-        left,
+        host,
         `First-Job Sector Trends: ${{selected.field}}`,
         `Shares of first observed post-PhD jobs by graduation cohort within this ${{fieldType}}.`,
         selected.series,
         {{ mode: 'share', yLabel: 'Share of first jobs', yearRange: currentYearRange() }}
       );
-      renderTopOrgs(right, selected.field, selected.top_orgs || []);
+      renderTopOrgs(host, selected.field, selected.org_year_counts || {{}}, currentYearRange());
     }}
 
     viewSelect.addEventListener('change', () => {{
@@ -1681,6 +1711,8 @@ def main() -> None:
     major_year_aggregate = group_year_share_table(rows, "nsf_major", "org_type_aggregate_v2")
     broad_top_orgs = top_orgs_by_group(rows, "nsf_broad_clean", exclude_values=["Other / Small Fields"])
     major_top_orgs = top_orgs_by_group(rows, "nsf_major")
+    broad_org_year_counts = org_year_counts_by_group(rows, "nsf_broad_clean", exclude_values=["Other / Small Fields"])
+    major_org_year_counts = org_year_counts_by_group(rows, "nsf_major")
 
     render_line_chart(
         yearly_aggregate,
@@ -1730,6 +1762,8 @@ def main() -> None:
             major_year_aggregate,
             broad_top_orgs,
             major_top_orgs,
+            broad_org_year_counts,
+            major_org_year_counts,
             field_categories,
         )
     )
