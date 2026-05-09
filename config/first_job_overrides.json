@@ -15,6 +15,406 @@
       "org_type": "Government Agency / Public Sector",
       "source": "override_exact_cdc",
       "confidence": "high"
+    },
+    "bell laboratories": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_bell_labs",
+      "confidence": "high"
+    },
+    "the national institute of environmental health sciences": {
+      "org_type": "Government Lab",
+      "source": "override_exact_niehs",
+      "confidence": "high"
+    },
+    "ecole polytechnique federale de lausanne": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_epfl_ascii",
+      "confidence": "high"
+    },
+    "école polytechnique fédérale de lausanne": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_epfl",
+      "confidence": "high"
+    },
+    "carnegie institution of washington": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_carnegie_institution",
+      "confidence": "high"
+    },
+    "the national center for atmospheric research": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_ncar",
+      "confidence": "high"
+    },
+    "whitehead institute for biomedical research": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_whitehead",
+      "confidence": "high"
+    },
+    "slac national accelerator laboratory": {
+      "org_type": "Government Lab",
+      "source": "override_exact_slac",
+      "confidence": "high"
+    },
+    "weill cornell medicine": {
+      "org_type": "Hospital / Health System",
+      "source": "override_exact_weill_cornell_medicine",
+      "confidence": "high"
+    },
+    "research triangle institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_rti",
+      "confidence": "high"
+    },
+    "ucla health systems": {
+      "org_type": "Hospital / Health System",
+      "source": "override_exact_ucla_health",
+      "confidence": "high"
+    },
+    "institute for defense analyses": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_ida",
+      "confidence": "high"
+    },
+    "the j. david gladstone institutes": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_gladstone",
+      "confidence": "high"
+    },
+    "the jackson laboratory": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_jax",
+      "confidence": "high"
+    },
+    "southwest research institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_swri",
+      "confidence": "high"
+    },
+    "nyu langone health": {
+      "org_type": "Hospital / Health System",
+      "source": "override_exact_nyu_langone",
+      "confidence": "high"
+    },
+    "sanford burnham prebys medical discovery institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_sanford_burnham",
+      "confidence": "high"
+    },
+    "national academies of sciences": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_national_academies",
+      "confidence": "high"
+    },
+    "harvard-smithsonian center for astrophysics": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_cfa",
+      "confidence": "high"
+    },
+    "national institute of allergy & infectious diseases": {
+      "org_type": "Government Lab",
+      "source": "override_exact_niaid_amp",
+      "confidence": "high"
+    },
+    "the world bank": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_world_bank",
+      "confidence": "high"
+    },
+    "institute for advanced study": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_ias",
+      "confidence": "high"
+    },
+    "the wistar institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_wistar",
+      "confidence": "high"
+    },
+    "naval postgraduate school": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_naval_postgraduate_school",
+      "confidence": "high"
+    },
+    "european organization for nuclear research": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_cern",
+      "confidence": "high"
+    },
+    "the henry m. jackson foundation": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_henry_m_jackson_foundation",
+      "confidence": "high"
+    },
+    "centre national de la recherche scientifique": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_cnrs",
+      "confidence": "high"
+    },
+    "national high magnetic field laboratory": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_nhmfl",
+      "confidence": "high"
+    },
+    "the american museum of natural history": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_amnh",
+      "confidence": "high"
+    },
+    "lsu health sciences center": {
+      "org_type": "Hospital / Health System",
+      "source": "override_exact_lsu_health",
+      "confidence": "high"
+    },
+    "weizmann institute of science": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_weizmann",
+      "confidence": "high"
+    },
+    "korea advanced institute of science & technology": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_kaist_amp",
+      "confidence": "high"
+    },
+    "korea advanced institute of science and technology": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_kaist",
+      "confidence": "high"
+    },
+    "american association for the advancement of science": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_aaas",
+      "confidence": "high"
+    },
+    "the donald danforth plant science center": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_danforth",
+      "confidence": "high"
+    },
+    "wildlife conservation society": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_wcs",
+      "confidence": "high"
+    },
+    "la jolla institute for allergy & immunology": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_ljaii_amp",
+      "confidence": "high"
+    },
+    "wadsworth center": {
+      "org_type": "Government Lab",
+      "source": "override_exact_wadsworth",
+      "confidence": "high"
+    },
+    "cooperative institute for research in environmental sciences": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_cires",
+      "confidence": "high"
+    },
+    "institut pasteur": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_pasteur",
+      "confidence": "high"
+    },
+    "max planck institute for extraterrestrial physics": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_max_planck_extraterrestrial",
+      "confidence": "high"
+    },
+    "information sciences institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_isi",
+      "confidence": "high"
+    },
+    "naval nuclear laboratory": {
+      "org_type": "Government Lab",
+      "source": "override_exact_naval_nuclear_lab",
+      "confidence": "high"
+    },
+    "riken": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_riken",
+      "confidence": "high"
+    },
+    "desert research institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_desert_research_institute",
+      "confidence": "high"
+    },
+    "new mexico institute of mining & technology": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_nmt_amp",
+      "confidence": "high"
+    },
+    "the marine biological laboratory": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_mbl",
+      "confidence": "high"
+    },
+    "national institute of child health & human development": {
+      "org_type": "Government Lab",
+      "source": "override_exact_nichd_amp",
+      "confidence": "high"
+    },
+    "the european molecular biology laboratory": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_embl",
+      "confidence": "high"
+    },
+    "universities space research association": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_usra",
+      "confidence": "high"
+    },
+    "buck institute for research on aging": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_buck",
+      "confidence": "high"
+    },
+    "aje - american journal experts": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_aje",
+      "confidence": "high"
+    },
+    "insight data science": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_insight_data_science",
+      "confidence": "high"
+    },
+    "fish & richardson pc": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_fish_richardson",
+      "confidence": "high"
+    },
+    "exponent failure analysis associates": {
+      "org_type": "Listed Company",
+      "source": "override_exact_exponent",
+      "confidence": "high"
+    },
+    "chemical abstracts service": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_cas",
+      "confidence": "high"
+    },
+    "katholieke universiteit leuven": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_ku_leuven",
+      "confidence": "high"
+    },
+    "space telescope science institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_stsci",
+      "confidence": "high"
+    },
+    "ball aerospace": {
+      "org_type": "Listed Company",
+      "source": "override_exact_ball_aerospace",
+      "confidence": "high"
+    },
+    "food & agriculture organization of the united nations": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_fao_un",
+      "confidence": "high"
+    },
+    "karolinska institutet": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_karolinska",
+      "confidence": "high"
+    },
+    "american chemical society": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_acs",
+      "confidence": "high"
+    },
+    "educational testing service": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_ets",
+      "confidence": "high"
+    },
+    "king abdulaziz city for science & technology": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_kacst",
+      "confidence": "high"
+    },
+    "the allen institute for brain science": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_allen_brain",
+      "confidence": "high"
+    },
+    "lamont-doherty earth observatory": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_lamont_doherty",
+      "confidence": "high"
+    },
+    "indian institute of science": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_iisc",
+      "confidence": "high"
+    },
+    "naval surface warfare center": {
+      "org_type": "Government Lab",
+      "source": "override_exact_nswc",
+      "confidence": "high"
+    },
+    "hgst a western digital company": {
+      "org_type": "Listed Company",
+      "source": "override_exact_hgst_wdc",
+      "confidence": "high"
+    },
+    "sabic (brasil)": {
+      "org_type": "Listed Company",
+      "source": "override_exact_sabic_brasil",
+      "confidence": "high"
+    },
+    "wyss institute": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_wyss_harvard",
+      "confidence": "high"
+    },
+    "pennington biomedical research center": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_pennington_lsu",
+      "confidence": "high"
+    },
+    "southern research institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_southern_research",
+      "confidence": "high"
+    },
+    "benaroya research institute at virginia mason": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_benaroya",
+      "confidence": "high"
+    },
+    "seattle biomedical research institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_seattle_biomed",
+      "confidence": "high"
+    },
+    "translational genomics research institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_tgen",
+      "confidence": "high"
+    },
+    "the field museum of natural history": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_field_museum",
+      "confidence": "high"
+    },
+    "world health organization": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_who",
+      "confidence": "high"
+    },
+    "space & naval warfare systems command": {
+      "org_type": "Government Lab",
+      "source": "override_exact_spawar",
+      "confidence": "high"
+    },
+    "barrow neurological institute": {
+      "org_type": "Hospital / Health System",
+      "source": "override_exact_barrow",
+      "confidence": "high"
     }
   },
   "classification_regex_overrides": [
@@ -22,6 +422,30 @@
       "pattern": "\\bfred hutch(?:inson)?\\b",
       "org_type": "Research Institute / Nonprofit",
       "source": "override_regex_fred_hutch",
+      "confidence": "high"
+    },
+    {
+      "pattern": "\\bnational institute of [a-z&\\- ]+\\b",
+      "org_type": "Government Lab",
+      "source": "override_regex_nih_subinstitute",
+      "confidence": "high"
+    },
+    {
+      "pattern": "\\b(?:max planck|institut pasteur|marine biological laboratory|whitehead institute|jackson laboratory|wistar institute)\\b",
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_regex_research_institute_cluster",
+      "confidence": "high"
+    },
+    {
+      "pattern": "\\b(?:research (?:center|centre|institute)|observatory|museum of natural history|aquarium research institute|biomedical research center|institute for theoretical physics|mathematical sciences research institute|research center)\\b",
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_regex_research_center_institute",
+      "confidence": "medium"
+    },
+    {
+      "pattern": "\\b(?:naval medical research center|space [& ]+naval warfare systems command|national institute for occupational safety [& ]+health)\\b",
+      "org_type": "Government Lab",
+      "source": "override_regex_federal_research_centers",
       "confidence": "high"
     }
   ]
