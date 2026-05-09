@@ -1650,17 +1650,20 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
         }}).filter(Boolean);
         return {{year, x: xPos(year), points}};
       }});
+      let selectedYear = null;
 
       function clearOverlay() {{
         overlayCtx.clearRect(0, 0, width, height);
       }}
 
-      function renderHoverState(yearEntry) {{
+      function renderSelection(yearEntry) {{
         clearOverlay();
         if (!yearEntry) {{
           tooltip.style.opacity = '0';
+          selectedYear = null;
           return;
         }}
+        selectedYear = yearEntry.year;
         overlayCtx.strokeStyle = 'rgba(60, 60, 60, 0.35)';
         overlayCtx.lineWidth = 1.2;
         overlayCtx.beginPath();
@@ -1702,13 +1705,12 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
         tooltip.style.top = top + 'px';
       }}
 
-      canvas.addEventListener('mousemove', (e) => {{
+      function nearestYearEntry(clientX, clientY) {{
         const rect = canvas.getBoundingClientRect();
-        const mx = e.clientX - rect.left;
-        const my = e.clientY - rect.top;
+        const mx = clientX - rect.left;
+        const my = clientY - rect.top;
         if (mx < margin.left || mx > margin.left + plotW || my < margin.top || my > margin.top + plotH) {{
-          renderHoverState(null);
-          return;
+          return null;
         }}
         let bestYear = null;
         let bestDist = Infinity;
@@ -1719,10 +1721,54 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
             bestYear = yearEntry;
           }}
         }}
-        renderHoverState(bestYear);
+        return bestYear;
+      }}
+
+      canvas.addEventListener('click', (e) => {{
+        const bestYear = nearestYearEntry(e.clientX, e.clientY);
+        if (!bestYear) {{
+          renderSelection(null);
+          return;
+        }}
+        if (selectedYear === bestYear.year) {{
+          renderSelection(null);
+          return;
+        }}
+        renderSelection(bestYear);
+      }});
+
+      card.addEventListener('keydown', (e) => {{
+        if (e.key === 'Escape') {{
+          renderSelection(null);
+        }}
+      }});
+
+      document.addEventListener('click', (e) => {{
+        if (!card.contains(e.target)) {{
+          renderSelection(null);
+        }}
+      }});
+
+      canvas.addEventListener('mousemove', (e) => {{
+        if (selectedYear !== null) return;
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+        if (mx < margin.left || mx > margin.left + plotW || my < margin.top || my > margin.top + plotH) {{
+          return;
+        }}
+        const bestYear = nearestYearEntry(e.clientX, e.clientY);
+        if (bestYear) {{
+          tooltip.style.opacity = '1';
+          tooltip.style.left = Math.min(bestYear.x + 14, width - 180) + 'px';
+          tooltip.style.top = (margin.top + 8) + 'px';
+          tooltip.innerHTML = `<strong>Click to pin</strong><br>Graduation year: ${{bestYear.year}}`;
+        }}
       }});
       canvas.addEventListener('mouseleave', () => {{
-        renderHoverState(null);
+        if (selectedYear === null) {{
+          tooltip.style.opacity = '0';
+        }}
       }});
 
       if (opts.note) {{
