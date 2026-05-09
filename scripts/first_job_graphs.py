@@ -18,6 +18,7 @@ OUT_DIR = os.path.join(ROOT, "outputs", "first_job_graphs")
 OUT_CSV = os.path.join(OUT_DIR, "first_job_after_phd_classified_v2.csv")
 SED_BROAD_XLSX = os.path.join(OUT_DIR, "nsf25349-tab001-002.xlsx")
 OVERRIDES_JSON = os.path.join(ROOT, "config", "first_job_overrides.json")
+SED_TAXONOMY_XLSX = os.path.join(ROOT, "codex_data", "nsf25349-taba-004.xlsx")
 
 
 ORG_ORDER = [
@@ -45,7 +46,7 @@ AGGREGATE_ORDER = [
     "Other / Unclassified",
 ]
 
-FIELD_ORDER = [
+DEFAULT_FIELD_ORDER = [
     "Biological and biomedical sciences",
     "Engineering",
     "Physical sciences",
@@ -55,6 +56,8 @@ FIELD_ORDER = [
     "Agricultural sciences and natural resources",
     "Geosciences, atmospheric, and ocean sciences",
 ]
+FIELD_ORDER = list(DEFAULT_FIELD_ORDER)
+MAJOR_ORDER: List[str] = []
 
 COLORS = {
     "University / Academic Institution": "#1f4e79",
@@ -78,10 +81,16 @@ COLORS = {
     "Health sciences": "#a23b72",
     "Agricultural sciences and natural resources": "#7a8f3b",
     "Geosciences, atmospheric, and ocean sciences": "#2f6f9f",
+    "Multidisciplinary/ interdisciplinary sciences": "#7f6a9a",
+    "Multidisciplinary sciences": "#7f6a9a",
 }
 
 DISPLAY_LABELS = {
     "Startup / VC-backed Private Firm": "Startup / VC-Backed",
+}
+
+SCHEMA_FIELD_ALIASES = {
+    "Multidisciplinary/ interdisciplinary sciences": "Multidisciplinary sciences",
 }
 
 OVERRIDES = {
@@ -483,6 +492,82 @@ def load_and_recode() -> Tuple[List[Dict[str, str]], Dict[str, object]]:
     }
 
 
+def classification_rank(row: Dict[str, str]) -> int:
+    org_type = row.get("first_job_org_type_v2", "")
+    confidence = row.get("classification_confidence_v2", "")
+    source = row.get("classification_source_v2", "")
+    rank = 0
+    if org_type and org_type != "Other / Unclassified":
+        rank += 10
+    if confidence == "high":
+        rank += 6
+    elif confidence == "medium":
+        rank += 3
+    if "override" in source:
+        rank += 2
+    if row.get("rcid", "").strip():
+        rank += 4
+    if row.get("revelio_primary_name", "").strip():
+        rank += 2
+    if row.get("company_raw", "").strip():
+        rank += 1
+    return rank
+
+
+def dedupe_rows_by_rev_user_id(rows: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    chosen: Dict[str, Dict[str, str]] = {}
+    for row in rows:
+        rev_user_id = (row.get("rev_user_id") or "").strip()
+        if not rev_user_id:
+            continue
+        current = chosen.get(rev_user_id)
+        if current is None:
+            chosen[rev_user_id] = row
+            continue
+
+        row_score = (
+            classification_rank(row),
+            1 if row.get("pq_row_id", "").strip() else 0,
+            -(to_int(row.get("first_job_year")) or 9999),
+            row.get("pq_row_id", ""),
+        )
+        current_score = (
+            classification_rank(current),
+            1 if current.get("pq_row_id", "").strip() else 0,
+            -(to_int(current.get("first_job_year")) or 9999),
+            current.get("pq_row_id", ""),
+        )
+        if row_score > current_score:
+            chosen[rev_user_id] = row
+    return list(chosen.values())
+
+
+def yearly_distinct_id_count_table(
+    rows: List[Dict[str, str]],
+    group_field: str,
+    id_field: str,
+    allowed_groups: Sequence[str] | None = None,
+) -> Dict[int, Dict[str, int]]:
+    allowed = set(allowed_groups or [])
+    table_sets: Dict[int, Dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
+    for row in rows:
+        year = to_int(row.get("grad_year"))
+        group = (row.get(group_field) or "").strip()
+        id_value = (row.get(id_field) or "").strip()
+        if year is None or not group or not id_value:
+            continue
+        if year > 2024:
+            continue
+        if allowed and group not in allowed:
+            continue
+        table_sets[year][group].add(id_value)
+    out: Dict[int, Dict[str, int]] = defaultdict(dict)
+    for year, group_map in table_sets.items():
+        for group, ids in group_map.items():
+            out[year][group] = len(ids)
+    return out
+
+
 def escape_xml(text: str) -> str:
     return (
         str(text)
@@ -515,6 +600,10 @@ def add_text(parts: List[str], x: float, y: float, text: str, size: int = 14,
 
 def display_label(text: str) -> str:
     return DISPLAY_LABELS.get(text, text)
+
+
+def schema_alias(text: str) -> str:
+    return SCHEMA_FIELD_ALIASES.get(text, text)
 
 
 def add_line(parts: List[str], x1: float, y1: float, x2: float, y2: float,
@@ -1033,9 +1122,61 @@ def parse_sed_broad_counts(xlsx_path: str) -> Dict[int, Dict[str, int]]:
     return counts
 
 
+def parse_sed_taxonomy_schema(xlsx_path: str) -> Tuple[List[str], List[str]]:
+    import zipfile
+    import xml.etree.ElementTree as ET
+
+    if not os.path.exists(xlsx_path):
+        return list(DEFAULT_FIELD_ORDER), []
+
+    ns = {"a": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+    with zipfile.ZipFile(xlsx_path) as zf:
+        shared = read_xlsx_shared_strings(zf)
+        ws = ET.fromstring(zf.read("xl/worksheets/sheet1.xml"))
+
+    rows = ws.find("a:sheetData", ns)
+    if rows is None:
+        return list(DEFAULT_FIELD_ORDER), []
+
+    broad_fields: List[str] = []
+    major_fields: List[str] = []
+    current_broad = None
+
+    for row in rows.findall("a:row", ns):
+        values: Dict[str, str] = {}
+        for c in row.findall("a:c", ns):
+            ref = c.attrib.get("r", "")
+            col = re.sub(r"\d+", "", ref)
+            t = c.attrib.get("t")
+            v = c.find("a:v", ns)
+            val = v.text if v is not None else ""
+            if t == "s" and val:
+                val = shared[int(val)]
+            values[col] = val
+
+        field = (values.get("A") or "").strip()
+        level = (values.get("B") or "").strip()
+        if not field or not level:
+            continue
+
+        if level == "Broad":
+            if field == "Psychology":
+                break
+            if field not in {"Science and engineering", "Non-science and engineering"}:
+                current_broad = schema_alias(field)
+                broad_fields.append(current_broad)
+            continue
+
+        if level == "Major" and current_broad:
+            major_fields.append(schema_alias(field))
+
+    return broad_fields or list(DEFAULT_FIELD_ORDER), major_fields
+
+
 def build_dashboard_payload(
     yearly_aggregate: Dict[int, Dict[str, int]],
     broad_year_counts: Dict[int, Dict[str, int]],
+    sed_matched_counts: Dict[int, Dict[str, int]],
     sed_broad_counts: Dict[int, Dict[str, int]],
     broad_year_aggregate: Dict[str, Dict[int, Dict[str, int]]],
     major_year_aggregate: Dict[str, Dict[int, Dict[str, int]]],
@@ -1071,11 +1212,11 @@ def build_dashboard_payload(
     for field in FIELD_ORDER:
         matched_series = []
         sed_series = []
-        years_union = sorted(set(broad_year_counts) | set(sed_broad_counts))
+        years_union = sorted(set(sed_matched_counts) | set(sed_broad_counts))
         for year in years_union:
             if year < 2014 or year > 2020:
                 continue
-            matched_series.append({"year": year, "value": broad_year_counts.get(year, {}).get(field, 0)})
+            matched_series.append({"year": year, "value": sed_matched_counts.get(year, {}).get(field, 0)})
             sed_series.append({"year": year, "value": sed_broad_counts.get(year, {}).get(field, 0)})
         if any(v["value"] for v in matched_series) or any(v["value"] for v in sed_series):
             sed_comparison_fields.append(
@@ -1111,11 +1252,10 @@ def build_dashboard_payload(
         })
 
     major_fields = []
-    for field, year_data in sorted(
-        major_year_aggregate.items(),
-        key=lambda kv: sum(sum(v.values()) for v in kv[1].values()),
-        reverse=True,
-    ):
+    for field in MAJOR_ORDER:
+        year_data = major_year_aggregate.get(field)
+        if not year_data:
+            continue
         field_years = sorted(year_data)
         series_list = []
         for cat in categories:
@@ -1140,7 +1280,7 @@ def build_dashboard_payload(
             "title": "US STEM PhD Graduates by Graduation Year and NSF Broad Field",
             "series": broad_count_series,
         },
-        "overall_sed_comparison": {
+        "sed_comparison": {
             "title": "Matched File vs. Survey of Earned Doctorates by NSF Broad Field",
             "fields": sed_comparison_fields,
         },
@@ -1251,6 +1391,12 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
       font-size: 14px;
       margin-bottom: 14px;
     }}
+    .note {{
+      color: #7a7a7a;
+      font-size: 12px;
+      line-height: 1.45;
+      margin-top: 12px;
+    }}
     .chart-box {{
       position: relative;
     }}
@@ -1298,7 +1444,7 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
 <body>
   <div class="wrap">
     <h1>First Jobs After PhD</h1>
-    <p class="sub">Interactive dashboard using the v2 classification refresh. Hover over points to see year and share.</p>
+    <p class="sub">Interactive dashboard of first-job outcomes for U.S. STEM PhDs. Hover over points to see year and share.</p>
     <div class="card">
       <div class="controls">
         <div class="control">
@@ -1307,6 +1453,7 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
             <option value="overall">Overall sample</option>
             <option value="broad">NSF broad field</option>
             <option value="major">NSF major field</option>
+            <option value="sed">SED comparison</option>
           </select>
         </div>
         <div class="control">
@@ -1505,6 +1652,13 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
       canvas.addEventListener('mouseleave', () => {{
         tooltip.style.opacity = '0';
       }});
+
+      if (opts.note) {{
+        const note = document.createElement('div');
+        note.className = 'note';
+        note.textContent = opts.note;
+        card.appendChild(note);
+      }}
     }}
 
     function topOrgsForRange(orgYearCounts, yearRange, topN = 10) {{
@@ -1545,6 +1699,10 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
       }}
       table.appendChild(tbody);
       card.appendChild(table);
+      const note = document.createElement('div');
+      note.className = 'note';
+      note.textContent = 'Note: Organization names use the best available employer identifier in this priority order: Revelio primary name, Revelio company, ultimate parent name, company_raw, then company_cleaned. Counts are based on one retained observation per rev_user_id within the selected year window.';
+      card.appendChild(note);
       container.appendChild(card);
     }}
 
@@ -1588,6 +1746,7 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
     function currentCollection() {{
       if (viewSelect.value === 'broad') return DATA.broad_fields;
       if (viewSelect.value === 'major') return DATA.major_fields;
+      if (viewSelect.value === 'sed') return DATA.sed_comparison.fields;
       return [];
     }}
 
@@ -1616,48 +1775,29 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
         renderChart(
           host,
           DATA.overall.title,
-          'Shares of first observed post-PhD jobs. Government combines agencies and labs; academia is universities only.',
+          'Shares of first observed post-PhD jobs after deduplicating to one retained observation per rev_user_id. Government combines agencies and labs; academia is universities only.',
           DATA.overall.series,
-          {{ mode: 'share', yLabel: 'Share of first jobs', yearRange: currentYearRange() }}
+          {{ mode: 'share', yLabel: 'Share of first jobs', yearRange: currentYearRange(), note: 'Note: The main job-outcome views are person-level. When the same rev_user_id appears multiple times, the dashboard keeps one retained observation using a deterministic preference for stronger employer and classification information.' }}
         );
         renderChart(
           host,
           DATA.overall_field_counts.title,
-          'Counts of graduates in the matched file by graduation year across NSF broad fields.',
+          'Counts by graduation year across NSF broad fields after deduplicating to one retained observation per rev_user_id.',
           DATA.overall_field_counts.series,
-          {{ mode: 'count', yLabel: 'Graduates in matched file', yearRange: currentYearRange() }}
+          {{ mode: 'count', yLabel: 'Graduates in matched file', yearRange: currentYearRange(), note: 'Note: These counts are from the matched first-job file, not the full SED universe. Broad fields shown here are the SED taxonomy broad fields that occur above Psychology in the official schema file.' }}
         );
-        const compareWrap = document.createElement('div');
-        compareWrap.className = 'mini-control';
-        const compareLabel = document.createElement('label');
-        compareLabel.textContent = 'Broad field for matched-vs-SED comparison';
-        const compareSelect = document.createElement('select');
-        DATA.overall_sed_comparison.fields.forEach((item) => {{
-          const opt = document.createElement('option');
-          opt.value = item.slug;
-          opt.textContent = item.field;
-          compareSelect.appendChild(opt);
-        }});
-        compareWrap.appendChild(compareLabel);
-        compareWrap.appendChild(compareSelect);
-        const renderComparison = () => {{
-          const existing = host.querySelector('[data-compare-chart="true"]');
-          if (existing) existing.remove();
-          const item = DATA.overall_sed_comparison.fields.find((x) => x.slug === compareSelect.value) || DATA.overall_sed_comparison.fields[0];
-          if (!item) return;
-          const temp = document.createElement('div');
-          temp.dataset.compareChart = 'true';
-          host.appendChild(temp);
-          renderChart(
-            temp,
-            `${{DATA.overall_sed_comparison.title}}: ${{item.field}}`,
-            'Solid blue line is the matched file; red line is the official NCSES SED count. This comparison is restricted to 2014–2020.',
-            item.series,
-            {{ mode: 'count', yLabel: 'Graduates', extraControl: compareWrap, yearRange: currentYearRange() }}
-          );
-        }};
-        compareSelect.addEventListener('change', renderComparison);
-        renderComparison();
+        return;
+      }}
+      if (viewSelect.value === 'sed') {{
+        const selectedSed = DATA.sed_comparison.fields.find((item) => item.slug === fieldSelect.value) || DATA.sed_comparison.fields[0];
+        if (!selectedSed) return;
+        renderChart(
+          host,
+          `${{DATA.sed_comparison.title}}: ${{selectedSed.field}}`,
+          'Solid blue line is the matched file counted by distinct pq_row_id; red line is the official NCSES SED count. This comparison is restricted to 2014–2020.',
+          selectedSed.series,
+          {{ mode: 'count', yLabel: 'Graduates', yearRange: currentYearRange(), note: 'Note: Unlike the main dashboard views, the matched-file side of this SED comparison uses distinct pq_row_id rather than rev_user_id. The official SED series currently comes from NCSES Table 1-2 and is shown only for 2014–2020.' }}
+        );
         return;
       }}
       const selected = currentCollection().find((item) => item.slug === fieldSelect.value) || currentCollection()[0];
@@ -1666,9 +1806,9 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
       renderChart(
         host,
         `First-Job Sector Trends: ${{selected.field}}`,
-        `Shares of first observed post-PhD jobs by graduation cohort within this ${{fieldType}}.`,
+        `Shares of first observed post-PhD jobs by graduation cohort within this ${{fieldType}}, using one retained observation per rev_user_id.`,
         selected.series,
-        {{ mode: 'share', yLabel: 'Share of first jobs', yearRange: currentYearRange() }}
+        {{ mode: 'share', yLabel: 'Share of first jobs', yearRange: currentYearRange(), note: viewSelect.value === 'broad' ? 'Note: Broad fields follow the official SED taxonomy and include only fields that occur above Psychology in the schema file nsf25349-taba-004.xlsx. The source dataset itself is not altered; this is a dashboard inclusion rule.' : 'Note: Major fields follow the official SED taxonomy and include only majors nested under broad fields that occur above Psychology in the schema file nsf25349-taba-004.xlsx. This excludes Psychology and lower fields, including geography-related fields outside the retained schema block.' }}
       );
       renderTopOrgs(host, selected.field, selected.org_year_counts || {{}}, currentYearRange());
     }}
@@ -1701,18 +1841,21 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
 
 
 def main() -> None:
-    global OVERRIDES
+    global OVERRIDES, FIELD_ORDER, MAJOR_ORDER
     OVERRIDES = load_overrides()
+    FIELD_ORDER, MAJOR_ORDER = parse_sed_taxonomy_schema(SED_TAXONOMY_XLSX)
     rows, diagnostics = load_and_recode()
-    yearly_aggregate = yearly_share_table(rows, "org_type_aggregate_v2")
-    broad_year_counts = yearly_count_table(rows, "nsf_broad_clean", allowed_groups=FIELD_ORDER)
+    person_rows = dedupe_rows_by_rev_user_id(rows)
+    yearly_aggregate = yearly_share_table(person_rows, "org_type_aggregate_v2")
+    broad_year_counts = yearly_count_table(person_rows, "nsf_broad_clean", allowed_groups=FIELD_ORDER)
     sed_broad_counts = parse_sed_broad_counts(SED_BROAD_XLSX)
-    field_year_aggregate = field_year_share_table(rows, "org_type_aggregate_v2")
-    major_year_aggregate = group_year_share_table(rows, "nsf_major", "org_type_aggregate_v2")
-    broad_top_orgs = top_orgs_by_group(rows, "nsf_broad_clean", exclude_values=["Other / Small Fields"])
-    major_top_orgs = top_orgs_by_group(rows, "nsf_major")
-    broad_org_year_counts = org_year_counts_by_group(rows, "nsf_broad_clean", exclude_values=["Other / Small Fields"])
-    major_org_year_counts = org_year_counts_by_group(rows, "nsf_major")
+    sed_matched_counts = yearly_distinct_id_count_table(rows, "nsf_broad_clean", "pq_row_id", allowed_groups=FIELD_ORDER)
+    field_year_aggregate = field_year_share_table(person_rows, "org_type_aggregate_v2")
+    major_year_aggregate = group_year_share_table(person_rows, "nsf_major", "org_type_aggregate_v2")
+    broad_top_orgs = top_orgs_by_group(person_rows, "nsf_broad_clean", exclude_values=["Other / Small Fields"])
+    major_top_orgs = top_orgs_by_group(person_rows, "nsf_major")
+    broad_org_year_counts = org_year_counts_by_group(person_rows, "nsf_broad_clean", exclude_values=["Other / Small Fields"])
+    major_org_year_counts = org_year_counts_by_group(person_rows, "nsf_major")
 
     render_line_chart(
         yearly_aggregate,
@@ -1757,6 +1900,7 @@ def main() -> None:
         build_dashboard_payload(
             yearly_aggregate,
             broad_year_counts,
+            sed_matched_counts,
             sed_broad_counts,
             field_year_aggregate,
             major_year_aggregate,
