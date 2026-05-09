@@ -1491,9 +1491,11 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
       const box = document.createElement('div');
       box.className = 'chart-box';
       const canvas = document.createElement('canvas');
+      const overlay = document.createElement('canvas');
       const tooltip = document.createElement('div');
       tooltip.className = 'tooltip';
       box.appendChild(canvas);
+      box.appendChild(overlay);
       box.appendChild(tooltip);
       card.appendChild(box);
       container.appendChild(card);
@@ -1504,8 +1506,17 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
       canvas.width = width * dpr;
       canvas.height = height * dpr;
       canvas.style.height = height + 'px';
+      overlay.width = width * dpr;
+      overlay.height = height * dpr;
+      overlay.style.height = height + 'px';
+      overlay.style.position = 'absolute';
+      overlay.style.left = '0';
+      overlay.style.top = '0';
+      overlay.style.pointerEvents = 'none';
       const ctx = canvas.getContext('2d');
+      const overlayCtx = overlay.getContext('2d');
       ctx.scale(dpr, dpr);
+      overlayCtx.scale(dpr, dpr);
 
       const margin = {{top: 18, right: 350, bottom: 52, left: 88}};
       const plotW = width - margin.left - margin.right;
@@ -1534,7 +1545,6 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
         ? Math.max(1000, Math.ceil(rawMax / 1000) * 1000)
         : 0.8;
       const minY = 0;
-      const hoverPoints = [];
 
       function xPos(year) {{
         return margin.left + ((year - years[0]) / Math.max(years[years.length - 1] - years[0], 1)) * plotW;
@@ -1596,7 +1606,6 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
           const val = mode === 'count' ? (v.value || 0) : v.share;
           const y = yPos(val);
           if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-          hoverPoints.push({{x, y, color: s.color, label: s.label, year: v.year, share: v.share, value: v.value}});
         }});
         ctx.stroke();
         s.values.forEach((v) => {{
@@ -1625,32 +1634,95 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
         ctx.fillText(s.label, legendX + 24, y + 3);
       }});
 
+      const yearLookup = years.map((year) => {{
+        const points = filteredSeries.map((s) => {{
+          const value = s.values.find((v) => v.year === year);
+          if (!value) return null;
+          const plotValue = mode === 'count' ? (value.value || 0) : value.share;
+          return {{
+            color: s.color,
+            label: s.label,
+            share: value.share,
+            value: value.value,
+            x: xPos(year),
+            y: yPos(plotValue)
+          }};
+        }}).filter(Boolean);
+        return {{year, x: xPos(year), points}};
+      }});
+
+      function clearOverlay() {{
+        overlayCtx.clearRect(0, 0, width, height);
+      }}
+
+      function renderHoverState(yearEntry) {{
+        clearOverlay();
+        if (!yearEntry) {{
+          tooltip.style.opacity = '0';
+          return;
+        }}
+        overlayCtx.strokeStyle = 'rgba(60, 60, 60, 0.35)';
+        overlayCtx.lineWidth = 1.2;
+        overlayCtx.beginPath();
+        overlayCtx.moveTo(yearEntry.x, margin.top);
+        overlayCtx.lineTo(yearEntry.x, margin.top + plotH);
+        overlayCtx.stroke();
+
+        yearEntry.points.forEach((point) => {{
+          overlayCtx.fillStyle = point.color;
+          overlayCtx.beginPath();
+          overlayCtx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+          overlayCtx.fill();
+          overlayCtx.strokeStyle = '#fff';
+          overlayCtx.lineWidth = 2;
+          overlayCtx.stroke();
+        }});
+
+        const sortedPoints = [...yearEntry.points].sort((a, b) => {{
+          const aVal = mode === 'count' ? (a.value || 0) : a.share;
+          const bVal = mode === 'count' ? (b.value || 0) : b.share;
+          return bVal - aVal;
+        }});
+        tooltip.innerHTML = `<strong>Graduation year: ${{yearEntry.year}}</strong><br>${{sortedPoints.map((point) => `
+          <span style="color:${{point.color}}">\u25cf</span> ${{point.label}}: ${{mode === 'count' ? (point.value || 0).toLocaleString() + ' graduates' : (point.share * 100).toFixed(1) + '%'}}
+        `).join('<br>')}}`;
+        tooltip.style.opacity = '1';
+
+        const tooltipWidth = tooltip.offsetWidth || 220;
+        const tooltipHeight = tooltip.offsetHeight || 120;
+        const preferredLeft = yearEntry.x + 14;
+        const maxLeft = width - tooltipWidth - 8;
+        const left = Math.max(8, Math.min(preferredLeft, maxLeft));
+        const topAnchor = sortedPoints.length
+          ? Math.min(...sortedPoints.map((point) => point.y))
+          : margin.top + 12;
+        const preferredTop = topAnchor - tooltipHeight - 12;
+        const top = Math.max(8, Math.min(preferredTop, height - tooltipHeight - 8));
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+      }}
+
       canvas.addEventListener('mousemove', (e) => {{
         const rect = canvas.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const my = e.clientY - rect.top;
-        let best = null;
-        let bestDist = 12;
-        for (const p of hoverPoints) {{
-          const d = Math.hypot(mx - p.x, my - p.y);
-          if (d < bestDist) {{
-            bestDist = d;
-            best = p;
+        if (mx < margin.left || mx > margin.left + plotW || my < margin.top || my > margin.top + plotH) {{
+          renderHoverState(null);
+          return;
+        }}
+        let bestYear = null;
+        let bestDist = Infinity;
+        for (const yearEntry of yearLookup) {{
+          const dist = Math.abs(mx - yearEntry.x);
+          if (dist < bestDist) {{
+            bestDist = dist;
+            bestYear = yearEntry;
           }}
         }}
-        if (best) {{
-          tooltip.style.opacity = '1';
-          tooltip.style.left = (best.x + 12) + 'px';
-          tooltip.style.top = (best.y - 12) + 'px';
-          tooltip.innerHTML = mode === 'count'
-            ? `<strong>${{best.label}}</strong><br>Graduation year: ${{best.year}}<br>Graduates: ${{(best.value || 0).toLocaleString()}}`
-            : `<strong>${{best.label}}</strong><br>Graduation year: ${{best.year}}<br>Share: ${{(best.share * 100).toFixed(1)}}%`;
-        }} else {{
-          tooltip.style.opacity = '0';
-        }}
+        renderHoverState(bestYear);
       }});
       canvas.addEventListener('mouseleave', () => {{
-        tooltip.style.opacity = '0';
+        renderHoverState(null);
       }});
 
       if (opts.note) {{
