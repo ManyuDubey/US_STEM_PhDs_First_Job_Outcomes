@@ -1719,7 +1719,7 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
         ...DATA.overall_field_counts.series.flatMap((s) => s.values.map((v) => v.year)),
         ...DATA.broad_fields.flatMap((f) => f.series.flatMap((s) => s.values.map((v) => v.year))),
         ...DATA.major_fields.flatMap((f) => f.series.flatMap((s) => s.values.map((v) => v.year))),
-        ...DATA.overall_sed_comparison.fields.flatMap((f) => f.series.flatMap((s) => s.values.map((v) => v.year)))
+        ...DATA.sed_comparison.fields.flatMap((f) => f.series.flatMap((s) => s.values.map((v) => v.year)))
       ])
     ].sort((a, b) => a - b);
     const minYear = allYears[0];
