@@ -377,7 +377,7 @@ python3 scripts/refresh_first_job_dashboard.py
 What this does:
 
 - validates the current first-job CSV input
-- reruns the `v2` classification logic
+- reruns the current classification refresh logic plus persistent overrides
 - rebuilds static SVG outputs
 - rebuilds the interactive dashboard
 - refreshes top-organization tables
@@ -416,16 +416,61 @@ The dashboard currently includes:
 
 - overall sector trends over graduation years
 - overall graduate counts by NSF broad field
-- matched-file versus SED comparison for NSF broad fields
+- a separate SED comparison view for NSF broad fields
 - interactive field-level trends for `nsf_broad`
 - interactive field-level trends for `nsf_major`
 - top 10 organizations for selected broad and major fields
 
 The dashboard has:
 
-- hover tooltips
+- click-to-pin chart inspection
 - dropdown selectors
 - global start-year and end-year sliders
+- note-style methodological text under charts and tables
+
+### Counting rules used in the dashboard
+
+Main job-outcome views are now person-level rather than row-level.
+
+- overall job graphs use one retained observation per `rev_user_id`
+- broad-field and major-field job graphs use the same `rev_user_id` person-level base
+- top-organization tables under those field graphs also use the `rev_user_id` person-level base
+
+When multiple rows share a `rev_user_id`, the pipeline keeps one row using a deterministic preference for stronger information, including:
+
+- non-`Other / Unclassified` classifications
+- higher classification confidence
+- stronger organization identifiers and naming fields
+- earlier first-job timing as a tie-breaker
+
+The SED comparison is intentionally separate:
+
+- matched-file counts in the SED comparison use distinct `pq_row_id`
+- official SED counts come from the external SED source file
+
+### Field taxonomy restriction used in field graphs
+
+Field-level graphs no longer use an ad hoc hardcoded field list alone. They are now restricted using the official SED taxonomy file:
+
+- `codex_data/nsf25349-taba-004.xlsx`
+
+Rule used:
+
+- keep only broad and major fields that occur above `Psychology` in the SED taxonomy ordering
+
+This means the field-level dashboard views are intended to stay within the STEM block above `Psychology` in the official taxonomy. The source data are not edited for this restriction; it is applied at the dashboard/filtering layer.
+
+Current included broad fields are:
+
+- `Agricultural sciences and natural resources`
+- `Biological and biomedical sciences`
+- `Computer and information sciences`
+- `Engineering`
+- `Geosciences, atmospheric, and ocean sciences`
+- `Health sciences`
+- `Mathematics and statistics`
+- `Multidisciplinary sciences`
+- `Physical sciences`
 
 ### Dashboard publishing
 
@@ -464,6 +509,49 @@ git push
 
 Do not use `git add .` unless you have explicitly checked what is being staged.
 
+### Current classification status
+
+The current refreshed classification file is:
+
+- `outputs/first_job_graphs/first_job_after_phd_classified_v2.csv`
+
+The latest targeted override passes have reduced the true residual bucket substantially.
+
+Current residual counts:
+
+- `Other / Unclassified`: `26,448` rows (`8.44%`)
+- `Business (Unclassified)`: `26,401` rows (`8.43%`)
+
+Important interpretation:
+
+- `Other / Unclassified` is the real residual bucket with insufficient signal
+- `Business (Unclassified)` means the employer looks business-like but cannot yet be confidently pushed into `Listed Company` or `Startup / VC-backed Private Firm`
+
+Recent improvements were driven by the persistent override file:
+
+- exact-name overrides for major labs, institutes, hospitals, universities, and agencies
+- regex overrides for NIH-style sub-institutes and research-center / research-institute names
+- organization-name standardization fixes used in the ranking tables
+
+### Organization table logic
+
+The top-organization tables in the dashboard do not require an `rcid` match.
+
+For each retained person-level row, the dashboard uses the best available organization name in this priority order:
+
+1. `revelio_primary_name`
+2. `revelio_company`
+3. `ultimate_parent_rcid_name`
+4. `company_raw`
+5. `company_cleaned`
+
+Then any persistent organization-name overrides from `config/first_job_overrides.json` are applied.
+
+The field-level top-organization tables are dynamic:
+
+- they update when the global year slider changes
+- they are computed from the current selected year window
+
 ### SED comparison status
 
 Official SED broad-field comparison data currently come from:
@@ -492,9 +580,16 @@ If a future Codex session is asked to get up to date in this directory, it shoul
 2. `config/first_job_overrides.json`
 3. `scripts/refresh_first_job_dashboard.py`
 4. `scripts/first_job_graphs.py`
+5. `outputs/first_job_graphs/CHANGELOG.md`
 
 If a new backend dataset has been dropped into `codex_data/`, the first operational step should usually be:
 
 ```bash
 python3 scripts/refresh_first_job_dashboard.py
 ```
+
+If the task involves the public dashboard, also remember:
+
+- `docs/index.html` is the GitHub Pages entrypoint
+- the public site is `https://manyudubey.github.io/US_STEM_PhDs_First_Job_Outcomes/`
+- raw files in `codex_data/` must not be pushed to GitHub
