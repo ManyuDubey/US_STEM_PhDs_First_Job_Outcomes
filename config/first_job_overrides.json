@@ -6,6 +6,91 @@
     "international business machines corp": "IBM"
   },
   "classification_exact_overrides": {
+    "sri international": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_sri_international",
+      "confidence": "high"
+    },
+    "woods hole oceanographic institution": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_whoi",
+      "confidence": "high"
+    },
+    "city of hope national cancer institute": {
+      "org_type": "Hospital / Health System",
+      "source": "override_exact_city_of_hope",
+      "confidence": "high"
+    },
+    "international monetary fund": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_imf",
+      "confidence": "high"
+    },
+    "the american national red cross": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_american_red_cross",
+      "confidence": "high"
+    },
+    "samsi": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_samsi",
+      "confidence": "high"
+    },
+    "statistical and applied mathematical sciences institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_samsi_full",
+      "confidence": "high"
+    },
+    "facility for rare isotope beams": {
+      "org_type": "Government Lab",
+      "source": "override_exact_frib",
+      "confidence": "high"
+    },
+    "chan zuckerberg biohub": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_cz_biohub",
+      "confidence": "high"
+    },
+    "samsung": {
+      "org_type": "Listed Company",
+      "source": "override_exact_samsung",
+      "confidence": "high"
+    },
+    "samsung electronics": {
+      "org_type": "Listed Company",
+      "source": "override_exact_samsung_electronics",
+      "confidence": "high"
+    },
+    "morgan stanley": {
+      "org_type": "Listed Company",
+      "source": "override_exact_morgan_stanley",
+      "confidence": "high"
+    },
+    "petrobras sa /gulf of mexico deep water oil exp ops/": {
+      "org_type": "Listed Company",
+      "source": "override_exact_petrobras",
+      "confidence": "high"
+    },
+    "pgs asa": {
+      "org_type": "Listed Company",
+      "source": "override_exact_pgs_asa",
+      "confidence": "high"
+    },
+    "aig": {
+      "org_type": "Listed Company",
+      "source": "override_exact_aig",
+      "confidence": "high"
+    },
+    "boeing research & technology": {
+      "org_type": "Listed Company",
+      "source": "override_exact_boeing_research_technology",
+      "confidence": "high"
+    },
+    "brown & caldwell": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_brown_caldwell",
+      "confidence": "high"
+    },
     "national institutes of health": {
       "org_type": "Government Lab",
       "source": "override_exact_nih",

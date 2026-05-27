@@ -126,7 +126,11 @@ def validate_csv(path: Path) -> Dict[str, object]:
     }
 
 
-def write_metadata(input_path: Path, validation: Dict[str, object]) -> None:
+def write_metadata(
+    input_path: Path,
+    validation: Dict[str, object],
+    refresh_command: str = "python3 scripts/refresh_first_job_dashboard.py",
+) -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     outputs = sorted(
         p.name for p in OUTPUT_DIR.iterdir() if p.is_file() and not p.name.startswith(".")
@@ -140,6 +144,7 @@ def write_metadata(input_path: Path, validation: Dict[str, object]) -> None:
         "input_modified_utc": datetime.fromtimestamp(
             input_path.stat().st_mtime, tz=timezone.utc
         ).isoformat(),
+        "refresh_command": refresh_command,
         "validation": validation,
         "outputs": outputs,
     }
@@ -166,7 +171,7 @@ def write_metadata(input_path: Path, validation: Dict[str, object]) -> None:
             "## How To Refresh Again",
             "",
             "```bash",
-            "python3 scripts/refresh_first_job_dashboard.py",
+            refresh_command,
             "```",
         ]
     )

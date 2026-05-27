@@ -462,7 +462,12 @@ def load_and_recode() -> Tuple[List[Dict[str, str]], Dict[str, object]]:
         ]
         for row in reader:
             old = row.get("first_job_org_type", "") or "Other / Unclassified"
-            new, src, conf = classify_v2(row)
+            if row.get("first_job_org_type_final", "").strip():
+                new = row.get("first_job_org_type_final", "").strip()
+                src = row.get("classification_source_final", "").strip() or "preclassified_final"
+                conf = row.get("classification_confidence_final", "").strip() or "high"
+            else:
+                new, src, conf = classify_v2(row)
             row["first_job_org_type_v2"] = new
             row["classification_source_v2"] = src
             row["classification_confidence_v2"] = conf
