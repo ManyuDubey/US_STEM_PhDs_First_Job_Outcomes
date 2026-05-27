@@ -1323,6 +1323,21 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
       margin: 0 auto;
       padding: 24px 24px 48px;
     }}
+    nav {{
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin: 0 0 18px;
+      font-size: 14px;
+    }}
+    nav a {{
+      color: #1f4e79;
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+    }}
+    nav a:hover {{
+      border-color: #1f4e79;
+    }}
     h1 {{
       margin: 0 0 6px;
       font-size: 32px;
@@ -1448,6 +1463,11 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
 </head>
 <body>
   <div class="wrap">
+    <nav>
+      <a href="index.html">First jobs</a>
+      <a href="ncses_comparison.html">NCSES comparison</a>
+      <a href="bachelors_countries.html">Bachelor countries</a>
+    </nav>
     <h1>First Jobs After PhD</h1>
     <p class="sub">Interactive dashboard of first-job outcomes for U.S. STEM PhDs. Hover over points to see year and share.</p>
     <div class="card">

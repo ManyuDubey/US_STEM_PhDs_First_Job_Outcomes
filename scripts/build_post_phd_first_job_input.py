@@ -385,6 +385,10 @@ def mapped_final_classification(row: Dict[str, str]) -> Tuple[str, str, str, str
     text = evidence_text(row)
     naics = row.get("position_naics_description", "")
 
+    override = override_classification(row)
+    if override is not None:
+        return override
+
     if org_class == "cchie":
         value = (row.get("cchie_2021_value") or "").strip()
         label = (row.get("cchie_2021_catlabel") or "").strip()
@@ -482,10 +486,6 @@ def mapped_final_classification(row: Dict[str, str]) -> Tuple[str, str, str, str
             source = "mapped_pitchbook_startup_backing_timing_unknown"
             confidence = "medium"
         return ("Startup / VC-backed Private Firm", subtype, source, confidence)
-
-    override = override_classification(row)
-    if override is not None:
-        return override
 
     source_type = (row.get("job_org_type") or "").strip()
     if source_type in {"Government Agency / Public Sector", "Government Lab", "Hospital / Health System"}:

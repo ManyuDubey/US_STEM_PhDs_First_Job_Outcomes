@@ -500,6 +500,806 @@
       "org_type": "Hospital / Health System",
       "source": "override_exact_barrow",
       "confidence": "high"
+    },
+    "dana-farber cancer institute, inc.": {
+      "org_type": "Hospital / Health System",
+      "source": "override_exact_dana_farber",
+      "confidence": "high"
+    },
+    "dana-farber cancer institute": {
+      "org_type": "Hospital / Health System",
+      "source": "override_exact_dana_farber",
+      "confidence": "high"
+    },
+    "joslin diabetes center, inc.": {
+      "org_type": "Hospital / Health System",
+      "source": "override_exact_joslin",
+      "confidence": "high"
+    },
+    "joslin diabetes center": {
+      "org_type": "Hospital / Health System",
+      "source": "override_exact_joslin",
+      "confidence": "high"
+    },
+    "barbara ann karmanos cancer institute": {
+      "org_type": "Hospital / Health System",
+      "source": "override_exact_karmanos",
+      "confidence": "high"
+    },
+    "texas a&m transportation institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_texas_am_transportation_institute",
+      "confidence": "high"
+    },
+    "national center for supercomputing applications": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_ncsa",
+      "confidence": "high"
+    },
+    "national center for advancing translational sciences": {
+      "org_type": "Government Lab",
+      "source": "override_exact_ncats",
+      "confidence": "high"
+    },
+    "missouri botanical garden": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_missouri_botanical_garden",
+      "confidence": "high"
+    },
+    "the new york botanical garden": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_new_york_botanical_garden",
+      "confidence": "high"
+    },
+    "american type culture collection": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_atcc",
+      "confidence": "high"
+    },
+    "the forsyth institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_forsyth_institute",
+      "confidence": "high"
+    },
+    "american geophysical union": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_agu",
+      "confidence": "high"
+    },
+    "world resources institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_wri",
+      "confidence": "high"
+    },
+    "point blue conservation science": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_point_blue",
+      "confidence": "high"
+    },
+    "agriculture & agri-food canada": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_agriculture_agri_food_canada",
+      "confidence": "high"
+    },
+    "texas commission on environmental quality": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_tceq",
+      "confidence": "high"
+    },
+    "texas water development board": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_twdb",
+      "confidence": "high"
+    },
+    "the european commission": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_european_commission",
+      "confidence": "high"
+    },
+    "inter-american development bank": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_iadb",
+      "confidence": "high"
+    },
+    "unicef (new york)": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_unicef",
+      "confidence": "high"
+    },
+    "united nations development programme": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_undp",
+      "confidence": "high"
+    },
+    "chicago public schools": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_chicago_public_schools",
+      "confidence": "high"
+    },
+    "county of san diego (california)": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_county_san_diego",
+      "confidence": "high"
+    },
+    "us geological survey": {
+      "org_type": "Government Lab",
+      "source": "override_exact_usgs",
+      "confidence": "high"
+    },
+    "geological survey of alabama": {
+      "org_type": "Government Lab",
+      "source": "override_exact_alabama_geological_survey",
+      "confidence": "high"
+    },
+    "y-12 national security complex": {
+      "org_type": "Government Lab",
+      "source": "override_exact_y12",
+      "confidence": "high"
+    },
+    "wilson sonsini goodrich & rosati pc": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_wilson_sonsini",
+      "confidence": "high"
+    },
+    "sterne, kessler, goldstein & fox pllc": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_sterne_kessler",
+      "confidence": "high"
+    },
+    "wolf, greenfield & sacks pc": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_wolf_greenfield",
+      "confidence": "high"
+    },
+    "oblon, spivak, mcclelland, maier & neustadt pc": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_oblon",
+      "confidence": "high"
+    },
+    "darby & darby": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_darby_darby",
+      "confidence": "high"
+    },
+    "mintz, levin, cohn, ferris, glovsky & popeo pc": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_mintz_levin",
+      "confidence": "high"
+    },
+    "merchant & gould pc": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_merchant_gould",
+      "confidence": "high"
+    },
+    "cd-adapco (united states)": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_cd_adapco",
+      "confidence": "high"
+    },
+    "dnv group as": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_dnv",
+      "confidence": "high"
+    },
+    "gte sl": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_gte_labs",
+      "confidence": "high"
+    },
+    "u.s. bank /global corporate trust services/": {
+      "org_type": "Listed Company",
+      "source": "override_exact_us_bank",
+      "confidence": "high"
+    },
+    "keybank na (cleveland, ohio)": {
+      "org_type": "Listed Company",
+      "source": "override_exact_keybank",
+      "confidence": "high"
+    },
+    "arcelormittal (private equity)": {
+      "org_type": "Listed Company",
+      "source": "override_exact_arcelormittal",
+      "confidence": "high"
+    },
+    "merck kgaa, darmstadt, germany": {
+      "org_type": "Listed Company",
+      "source": "override_exact_merck_kgaa",
+      "confidence": "high"
+    },
+    "samsung research america, inc.": {
+      "org_type": "Listed Company",
+      "source": "override_exact_samsung_research_america",
+      "confidence": "high"
+    },
+    "samsung semiconductor, inc.": {
+      "org_type": "Listed Company",
+      "source": "override_exact_samsung_semiconductor",
+      "confidence": "high"
+    },
+    "independent": {
+      "org_type": "Self-Employed / Independent",
+      "source": "override_exact_independent",
+      "confidence": "high"
+    },
+    "independent contractor": {
+      "org_type": "Self-Employed / Independent",
+      "source": "override_exact_independent_contractor",
+      "confidence": "high"
+    },
+    "private practice": {
+      "org_type": "Self-Employed / Independent",
+      "source": "override_exact_private_practice",
+      "confidence": "high"
+    },
+    "self": {
+      "org_type": "Self-Employed / Independent",
+      "source": "override_exact_self",
+      "confidence": "high"
+    },
+    "imec vzw /private equity/": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_imec",
+      "confidence": "high"
+    },
+    "friends of lsu agcenter botanic gardens at burden": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_lsu_botanic_gardens",
+      "confidence": "high"
+    },
+    "uc berkeley extension": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_uc_berkeley_extension",
+      "confidence": "high"
+    },
+    "cell press": {
+      "org_type": "Listed Company",
+      "source": "override_exact_cell_press_relx",
+      "confidence": "high"
+    },
+    "kaplan test prep & admissions": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_kaplan",
+      "confidence": "high"
+    },
+    "lundbeck bv": {
+      "org_type": "Listed Company",
+      "source": "override_exact_lundbeck",
+      "confidence": "high"
+    },
+    "the ohio aerospace institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_ohio_aerospace_institute",
+      "confidence": "high"
+    },
+    "virginia tech": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_virginia_tech",
+      "confidence": "high"
+    },
+    "pennie & edmonds": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_pennie_edmonds",
+      "confidence": "high"
+    },
+    "science magazine": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_science_magazine_aaas",
+      "confidence": "high"
+    },
+    "gns science": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_gns_science",
+      "confidence": "high"
+    },
+    "geiri north america": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_geiri_north_america",
+      "confidence": "high"
+    },
+    "arco (23575767)": {
+      "org_type": "Listed Company",
+      "source": "override_exact_arco",
+      "confidence": "high"
+    },
+    "energy biosciences institute": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_energy_biosciences_institute",
+      "confidence": "high"
+    },
+    "center for international forestry research": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_cifor",
+      "confidence": "high"
+    },
+    "volvo information technology ab": {
+      "org_type": "Listed Company",
+      "source": "override_exact_volvo_it",
+      "confidence": "high"
+    },
+    "cyclotron road": {
+      "org_type": "Government Lab",
+      "source": "override_exact_cyclotron_road",
+      "confidence": "high"
+    },
+    "archbold biological station": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_archbold_biological_station",
+      "confidence": "high"
+    },
+    "research!america": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_research_america",
+      "confidence": "high"
+    },
+    "mott macdonald": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_mott_macdonald",
+      "confidence": "high"
+    },
+    "sensitron semiconductor": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_sensitron",
+      "confidence": "high"
+    },
+    "the korea transport institute": {
+      "org_type": "Government Lab",
+      "source": "override_exact_korea_transport_institute",
+      "confidence": "high"
+    },
+    "pdvsa petroleos de venezuela": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_pdvsa",
+      "confidence": "high"
+    },
+    "wwf international": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_wwf",
+      "confidence": "high"
+    },
+    "valeant pharmaceuticals international /asia pacific ops/": {
+      "org_type": "Listed Company",
+      "source": "override_exact_valeant",
+      "confidence": "high"
+    },
+    "diosynth bv": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_diosynth",
+      "confidence": "high"
+    },
+    "aecom": {
+      "org_type": "Listed Company",
+      "source": "override_exact_aecom",
+      "confidence": "high"
+    },
+    "samsung austin r and d center": {
+      "org_type": "Listed Company",
+      "source": "override_exact_samsung_austin_rd",
+      "confidence": "high"
+    },
+    "samsung mobile": {
+      "org_type": "Listed Company",
+      "source": "override_exact_samsung_mobile",
+      "confidence": "high"
+    },
+    "samsung corning precision materials": {
+      "org_type": "Listed Company",
+      "source": "override_exact_samsung_corning",
+      "confidence": "high"
+    },
+    "rockwell science center": {
+      "org_type": "Listed Company",
+      "source": "override_exact_rockwell_science_center",
+      "confidence": "high"
+    },
+    "john a. moran eye center": {
+      "org_type": "Hospital / Health System",
+      "source": "override_exact_moran_eye_center",
+      "confidence": "high"
+    },
+    "vtt": {
+      "org_type": "Government Lab",
+      "source": "override_exact_vtt",
+      "confidence": "high"
+    },
+    "ncsu": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_ncsu",
+      "confidence": "high"
+    },
+    "hamilton, brook, smith & reynolds pc": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_hamilton_brook",
+      "confidence": "high"
+    },
+    "naval undersea warfare center": {
+      "org_type": "Government Lab",
+      "source": "override_exact_nuwc",
+      "confidence": "high"
+    },
+    "world agroforestry centre": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_world_agroforestry",
+      "confidence": "high"
+    },
+    "the church of jesus christ of latter-day saints": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_lds_church",
+      "confidence": "medium"
+    },
+    "ge oil & gas spa": {
+      "org_type": "Listed Company",
+      "source": "override_exact_ge_oil_gas",
+      "confidence": "high"
+    },
+    "usamricd": {
+      "org_type": "Government Lab",
+      "source": "override_exact_usamricd",
+      "confidence": "high"
+    },
+    "california state senate(united states)": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_california_state_senate",
+      "confidence": "high"
+    },
+    "rancho santa ana botanic garden": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_rancho_santa_ana_botanic_garden",
+      "confidence": "high"
+    },
+    "national snow & ice data center": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_nsidc",
+      "confidence": "high"
+    },
+    "us congress": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_us_congress",
+      "confidence": "high"
+    },
+    "the public library of science": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_plos",
+      "confidence": "high"
+    },
+    "helen keller international": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_helen_keller_international",
+      "confidence": "high"
+    },
+    "seqens sas": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_seqens",
+      "confidence": "high"
+    },
+    "critical path institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_critical_path_institute",
+      "confidence": "high"
+    },
+    "city of austin (texas)": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_city_austin",
+      "confidence": "high"
+    },
+    "schwegman lundberg & woessner pa": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_schwegman",
+      "confidence": "high"
+    },
+    "sughrue mion pllc": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_sughrue_mion",
+      "confidence": "high"
+    },
+    "city of san diego (california)": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_city_san_diego",
+      "confidence": "high"
+    },
+    "lbnl": {
+      "org_type": "Government Lab",
+      "source": "override_exact_lbnl",
+      "confidence": "high"
+    },
+    "the mitre corp.": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_mitre",
+      "confidence": "high"
+    },
+    "the nature conservancy, inc.": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_nature_conservancy",
+      "confidence": "high"
+    },
+    "draper, inc.": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_draper",
+      "confidence": "high"
+    },
+    "wellcome trust sanger institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_sanger",
+      "confidence": "high"
+    },
+    "institut national de recherche agronomique sa": {
+      "org_type": "Government Lab",
+      "source": "override_exact_inra",
+      "confidence": "high"
+    },
+    "rti health solutions": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_rti_health_solutions",
+      "confidence": "high"
+    },
+    "center for advanced vehicular systems": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_cavs",
+      "confidence": "high"
+    },
+    "exxonmobil upstream research company": {
+      "org_type": "Listed Company",
+      "source": "override_exact_exxonmobil_upstream_research",
+      "confidence": "high"
+    },
+    "winrock international, inc.": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_winrock",
+      "confidence": "high"
+    },
+    "comité des entreprises d’assurance": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_french_insurance_association",
+      "confidence": "medium"
+    },
+    "infineum usa l p": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_infineum",
+      "confidence": "high"
+    },
+    "oerlikon stationär-batterien ag aesch bl": {
+      "org_type": "Listed Company",
+      "source": "override_exact_oerlikon",
+      "confidence": "high"
+    },
+    "emd electronics": {
+      "org_type": "Listed Company",
+      "source": "override_exact_emd_electronics",
+      "confidence": "high"
+    },
+    "deccan international": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_deccan_international",
+      "confidence": "high"
+    },
+    "cdm new york": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_cdm_new_york",
+      "confidence": "medium"
+    },
+    "larry walker associates, incorporated": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_larry_walker_associates",
+      "confidence": "high"
+    },
+    "anteon": {
+      "org_type": "Listed Company",
+      "source": "override_exact_anteon",
+      "confidence": "high"
+    },
+    "cell press elsevier": {
+      "org_type": "Listed Company",
+      "source": "override_exact_cell_press_elsevier",
+      "confidence": "high"
+    },
+    "washington metropolitan area transit authority": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_wmata",
+      "confidence": "high"
+    },
+    "korea energy economics institute": {
+      "org_type": "Government Lab",
+      "source": "override_exact_korea_energy_economics_institute",
+      "confidence": "high"
+    },
+    "ingenius prep": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_ingenius_prep",
+      "confidence": "high"
+    },
+    "fraunhofer-gesellschaft ev": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_fraunhofer",
+      "confidence": "high"
+    },
+    "mufg union bank, na": {
+      "org_type": "Listed Company",
+      "source": "override_exact_mufg_union_bank",
+      "confidence": "high"
+    },
+    "dowcorning": {
+      "org_type": "Listed Company",
+      "source": "override_exact_dow_corning",
+      "confidence": "high"
+    },
+    "duke cancer institute": {
+      "org_type": "Hospital / Health System",
+      "source": "override_exact_duke_cancer_institute",
+      "confidence": "high"
+    },
+    "cgiar system organization": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_cgiar",
+      "confidence": "high"
+    },
+    "los angeles unified school district (california)": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_lausd",
+      "confidence": "high"
+    },
+    "saudi food & drug authority": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_saudi_fda",
+      "confidence": "high"
+    },
+    "jacobs associates": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_jacobs_associates",
+      "confidence": "high"
+    },
+    "j.d. power": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_jd_power",
+      "confidence": "high"
+    },
+    "united nations environment programme": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_unep",
+      "confidence": "high"
+    },
+    "dade county school district (florida)": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_dade_school_district",
+      "confidence": "high"
+    },
+    "national wildlife federation": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_national_wildlife_federation",
+      "confidence": "high"
+    },
+    "csiro plant industry": {
+      "org_type": "Government Lab",
+      "source": "override_exact_csiro_plant_industry",
+      "confidence": "high"
+    },
+    "county of dallas (texas)": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_dallas_county",
+      "confidence": "high"
+    },
+    "environmental working group": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_environmental_working_group",
+      "confidence": "high"
+    },
+    "the urban institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_urban_institute",
+      "confidence": "high"
+    },
+    "united network for organ sharing": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_unos",
+      "confidence": "high"
+    },
+    "moss landing marine laboratories": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_moss_landing_marine_labs",
+      "confidence": "high"
+    },
+    "california state assembly": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_california_state_assembly",
+      "confidence": "high"
+    },
+    "the global environment facility": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_global_environment_facility",
+      "confidence": "high"
+    },
+    "exploratorium": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_exploratorium",
+      "confidence": "high"
+    },
+    "pacific states marine fisheries commission": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_pacific_states_marine_fisheries",
+      "confidence": "high"
+    },
+    "the city of houston (texas)": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_city_houston",
+      "confidence": "high"
+    },
+    "cowi a/s": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_cowi",
+      "confidence": "high"
+    },
+    "vhb": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_vhb",
+      "confidence": "high"
+    },
+    "city of dallas (texas)": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_city_dallas",
+      "confidence": "high"
+    },
+    "ymca of the usa": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_ymca",
+      "confidence": "high"
+    },
+    "rothwell, figg, ernst & manbeck pc": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_rothwell_figg",
+      "confidence": "high"
+    },
+    "haldor topsøe a/s": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_haldor_topsoe",
+      "confidence": "high"
+    },
+    "defenders of wildlife": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_defenders_wildlife",
+      "confidence": "high"
+    },
+    "cobb county school district (georgia)": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_cobb_school_district",
+      "confidence": "high"
+    },
+    "california science center": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_california_science_center",
+      "confidence": "high"
+    },
+    "degenkolb engineers": {
+      "org_type": "Business (Unclassified)",
+      "source": "override_exact_degenkolb",
+      "confidence": "high"
+    },
+    "east baton rouge parish school district (louisiana)": {
+      "org_type": "Government Agency / Public Sector",
+      "source": "override_exact_east_baton_rouge_schools",
+      "confidence": "high"
+    },
+    "project drawdown": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_project_drawdown",
+      "confidence": "high"
+    },
+    "santander bank, na (wilmington, delaware)": {
+      "org_type": "Listed Company",
+      "source": "override_exact_santander_bank",
+      "confidence": "high"
+    },
+    "cornell high energy synchrotron source chess": {
+      "org_type": "University / Academic Institution",
+      "source": "override_exact_chess",
+      "confidence": "high"
+    },
+    "the alan turing institute": {
+      "org_type": "Research Institute / Nonprofit",
+      "source": "override_exact_alan_turing_institute",
+      "confidence": "high"
+    },
+    "cisco tetration analytics": {
+      "org_type": "Listed Company",
+      "source": "override_exact_cisco_tetration",
+      "confidence": "high"
     }
   },
   "classification_regex_overrides": [
