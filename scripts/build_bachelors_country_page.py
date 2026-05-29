@@ -42,6 +42,9 @@ COLORS = [
     "#2f7f7f",
     "#777777",
 ]
+EXCLUDED_DISPLAY_COUNTRIES = {"United States"}
+ALL_UNIVERSITIES_ID = "__all_universities__"
+ALL_UNIVERSITIES_LABEL = "All universities"
 
 
 def load_carnegie_nsf_map() -> tuple[dict[tuple[str, str], Dict[str, str]], Counter]:
@@ -164,7 +167,11 @@ def selected_degree_rows() -> tuple[list[Dict[str, str]], Counter]:
 
 
 def country_rank(counts: Counter, limit: int = 10) -> list[str]:
-    return [country for country, _count in counts.most_common(limit) if country]
+    return [
+        country
+        for country, _count in counts.most_common()
+        if country and country not in EXCLUDED_DISPLAY_COUNTRIES
+    ][:limit]
 
 
 def series_for_group(
@@ -178,7 +185,7 @@ def series_for_group(
         count
         for counter in by_year_country.values()
         for country, count in counter.items()
-        if country not in top_countries
+        if country not in top_countries and country not in EXCLUDED_DISPLAY_COUNTRIES
     )
     if other_total:
         countries.append("Other countries")
@@ -189,7 +196,11 @@ def series_for_group(
             counter = by_year_country[year]
             denom = sum(counter.values())
             if country == "Other countries":
-                count = sum(count for c, count in counter.items() if c not in top_countries)
+                count = sum(
+                    count
+                    for c, count in counter.items()
+                    if c not in top_countries and c not in EXCLUDED_DISPLAY_COUNTRIES
+                )
             else:
                 count = counter.get(country, 0)
             values.append(
@@ -237,11 +248,12 @@ def build_dashboard_payload(rows: list[Dict[str, str]], diagnostics: Counter) ->
             continue
         university_labels.setdefault(inst_norm, row.get("phd_institution", inst_norm))
         university_unitids.setdefault(inst_norm, row.get("carnegie_unitid", ""))
-        buckets[inst_norm]["overall"]["All STEM fields"][year][country] += 1
-        if row.get("nsf_broad"):
-            buckets[inst_norm]["broad"][row["nsf_broad"]][year][country] += 1
-        if row.get("nsf_major"):
-            buckets[inst_norm]["major"][row["nsf_major"]][year][country] += 1
+        for bucket_key in (ALL_UNIVERSITIES_ID, inst_norm):
+            buckets[bucket_key]["overall"]["All STEM fields"][year][country] += 1
+            if row.get("nsf_broad"):
+                buckets[bucket_key]["broad"][row["nsf_broad"]][year][country] += 1
+            if row.get("nsf_major"):
+                buckets[bucket_key]["major"][row["nsf_major"]][year][country] += 1
 
     for inst_norm, views in buckets.items():
         total_with_country = sum(
@@ -253,7 +265,7 @@ def build_dashboard_payload(rows: list[Dict[str, str]], diagnostics: Counter) ->
             continue
         university: Dict[str, object] = {
             "id": inst_norm,
-            "name": university_labels.get(inst_norm, inst_norm),
+            "name": ALL_UNIVERSITIES_LABEL if inst_norm == ALL_UNIVERSITIES_ID else university_labels.get(inst_norm, inst_norm),
             "carnegie_unitid": university_unitids.get(inst_norm, ""),
             "n_with_country": total_with_country,
             "views": {"overall": [], "broad": [], "major": []},
@@ -302,10 +314,12 @@ def build_dashboard_payload(rows: list[Dict[str, str]], diagnostics: Counter) ->
             university["views"][view_name] = entries
         universities[inst_norm] = university
 
-    university_list = sorted(
+    all_universities = universities.pop(ALL_UNIVERSITIES_ID, None)
+    actual_university_list = sorted(
         universities.values(),
         key=lambda item: (-int(item["n_with_country"]), str(item["name"])),
     )
+    university_list = ([all_universities] if all_universities else []) + actual_university_list
     all_years = sorted(
         {
             int(value["year"])
@@ -353,9 +367,10 @@ def build_dashboard_payload(rows: list[Dict[str, str]], diagnostics: Counter) ->
         "summary": {
             **dict(diagnostics),
             "excluded_broad_fields": sorted(EXCLUDED_BROAD_FIELDS),
+            "excluded_display_countries": sorted(EXCLUDED_DISPLAY_COUNTRIES),
             "min_broad_group_with_country": MIN_BROAD_GROUP_WITH_COUNTRY,
             "min_major_group_with_country": MIN_MAJOR_GROUP_WITH_COUNTRY,
-            "universities": len(university_list),
+            "universities": len(actual_university_list),
             "year_min": min(all_years) if all_years else None,
             "year_max": max(all_years) if all_years else None,
         },
@@ -403,7 +418,7 @@ def write_page(payload: dict[str, object]) -> None:
         <canvas id="country-chart" class="chart"></canvas>
         <div id="tooltip" class="tooltip"></div>
       </div>
-      <div class="note">Uses Carnegie PhD university names from codex_data/goid_user_id_nsf.csv. Social sciences, education, psychology, business, humanities and arts, and other non-science fields are excluded. Percentages use users with an identified bachelor country as the denominator.</div>
+      <div class="note">Uses Carnegie PhD university names from codex_data/goid_user_id_nsf.csv. Social sciences, education, psychology, business, humanities and arts, and other non-science fields are excluded. United States is omitted from the plotted country series so international origins are visible. Percentages still use all users with an identified bachelor country as the denominator.</div>
     </div>
     <div class="card">
       <h2>Country Summary</h2>
