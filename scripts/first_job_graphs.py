@@ -1464,7 +1464,8 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
 <body>
   <div class="wrap">
     <nav>
-      <a href="index.html">First jobs</a>
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">First jobs</a>
       <a href="ncses_comparison.html">NCSES comparison</a>
       <a href="bachelors_countries.html">Bachelor countries</a>
     </nav>

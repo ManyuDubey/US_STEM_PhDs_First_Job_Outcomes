@@ -2,7 +2,7 @@
 
 This folder is safe to publish to GitHub Pages.
 
-- `index.html` is the dashboard entrypoint.
+- `index.html` is the landing page.
 - `dashboard.html` is the same first-job dashboard under an explicit name.
 - `ncses_comparison.html` compares NCSES university-field-year counts with the matched data.
 - `bachelors_countries.html` summarizes bachelor-degree countries by field and university.

@@ -325,7 +325,8 @@ def html_shell(title: str, subtitle: str, body: str, data_script: str = "") -> s
 <body>
   <div class="wrap">
     <nav>
-      <a href="index.html">First jobs</a>
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">First jobs</a>
       <a href="ncses_comparison.html">NCSES comparison</a>
       <a href="bachelors_countries.html">Bachelor countries</a>
     </nav>
