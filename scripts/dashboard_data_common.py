@@ -39,9 +39,34 @@ BACHELOR_RE = re.compile(
     r")\b",
     re.IGNORECASE,
 )
+SAFE_BACHELOR_ABBREV_RE = re.compile(
+    r"^(a\.?b\.?|s\.?b\.?|scb|bse|bsee|bsme|bsce|bsie|bsche|bche|bme|"
+    r"bsae|bsa|basc|bas|bsci|b\.sci\.?|hbsc|beng|b\.eng\.?|btech|"
+    r"b\.tech\.?|b\.arch\.?|bsph|bcom|b\.com\.?|m\.?b\.?b\.?s\.?)$",
+    re.IGNORECASE,
+)
+SAFE_BACHELOR_WORD_RE = re.compile(
+    r"\b("
+    r"bachelor|bacheloru2019s|bachelorâ|baccalaureate|bacharelado|"
+    r"bachalor|bachlor|bachelar|batchelor|undergrad|licence"
+    r")\b",
+    re.IGNORECASE,
+)
+SAFE_ENGINEERING_EQUIV_RE = re.compile(
+    r"\b(diplom[ -]ingenieur|diplome d['’]ingenieur|engineering diploma|diploma engineer)\b",
+    re.IGNORECASE,
+)
 NON_BACHELOR_RE = re.compile(
     r"\b(master|mba|m\.?\s*s\.?|m\.?\s*a\.?|ph\.?\s*d\.?|doctor|jd|j\.?\s*d\.?|"
     r"md|m\.?\s*d\.?|high school|certificate|associate)\b",
+    re.IGNORECASE,
+)
+SAFE_BACHELOR_EXCLUDE_RE = re.compile(
+    r"\b("
+    r"master|mba|executive mba|ph\.?\s*d|doctor|high school|school diploma|"
+    r"certificate|post graduate|habilitation|diplomate|abitur|m\.?\s*d\.?|"
+    r"j\.?\s*d\.?|surgery|medicine|mbbs"
+    r")\b",
     re.IGNORECASE,
 )
 
@@ -142,6 +167,47 @@ def country_from_degree_row(row: Dict[str, str]) -> tuple[str, str]:
     return "", "missing"
 
 
+def build_unique_institution_country_map(
+    users: Dict[str, Dict[str, str]] | None = None,
+    min_evidence: int = 5,
+) -> Dict[str, str]:
+    wanted_users = set(users or {})
+    countries: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    with DEG_INFO.open(newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if wanted_users and norm_id(row.get("rev_user_id")) not in wanted_users:
+                continue
+            country = clean(row.get("university_country"))
+            if not country:
+                continue
+            country = normalize_country(country)
+            for field in ["university_name", "university_raw", "ultimate_parent_school_name"]:
+                inst = clean(row.get(field))
+                if inst:
+                    countries[inst][country] += 1
+
+    out: Dict[str, str] = {}
+    for inst, counter in countries.items():
+        if len(counter) == 1 and sum(counter.values()) >= min_evidence:
+            out[inst] = next(iter(counter))
+    return out
+
+
+def infer_country_from_degree_row(
+    row: Dict[str, str],
+    institution_country_map: Dict[str, str],
+) -> tuple[str, str]:
+    country, source = country_from_degree_row(row)
+    if country:
+        return country, source
+    for field in ["university_name", "university_raw", "ultimate_parent_school_name"]:
+        inst = clean(row.get(field))
+        if inst and inst in institution_country_map:
+            return institution_country_map[inst], "unique_institution_country"
+    return "", "missing"
+
+
 def normalize_country(country: str) -> str:
     aliases = {
         "United States of America": "United States",
@@ -184,13 +250,27 @@ def is_phd_degree(row: Dict[str, str]) -> bool:
 
 
 def is_bachelor_degree(row: Dict[str, str]) -> bool:
+    return bool(bachelor_degree_signal(row))
+
+
+def bachelor_degree_signal(row: Dict[str, str]) -> str:
     degree = clean(row.get("degree")).lower()
     raw = clean(row.get("degree_raw"))
     if degree == "bachelor":
-        return True
+        return "degree_bachelor"
     if BACHELOR_RE.search(raw):
-        return True
-    return False
+        return "revelio_bachelor_pattern"
+    if re.search(r"\b(m\.?b\.?b\.?s\.?|bachelor of medicine)\b", raw, re.IGNORECASE):
+        return "safe_medical_bachelor_equivalent"
+    if SAFE_BACHELOR_EXCLUDE_RE.search(raw):
+        return ""
+    if SAFE_BACHELOR_ABBREV_RE.match(raw):
+        return "safe_bachelor_abbreviation"
+    if SAFE_BACHELOR_WORD_RE.search(raw):
+        return "safe_bachelor_word_or_typo"
+    if SAFE_ENGINEERING_EQUIV_RE.search(raw):
+        return "safe_engineering_bachelor_equivalent"
+    return ""
 
 
 def degree_university(row: Dict[str, str]) -> str:
@@ -251,7 +331,9 @@ def choose_bachelor_row(
     user_info: Dict[str, str],
     by_user: dict[str, list[Dict[str, str]]],
     by_goid: dict[str, list[Dict[str, str]]],
+    institution_country_map: Dict[str, str] | None = None,
 ) -> tuple[Dict[str, str] | None, str]:
+    institution_country_map = institution_country_map or {}
     goid = user_info.get("goid", "")
     user_id = user_info.get("rev_user_id", "")
     candidates = [row for row in by_goid.get(goid, []) if is_bachelor_degree(row)]
@@ -268,14 +350,31 @@ def choose_bachelor_row(
         degree = clean(row.get("degree")).lower()
         raw = clean(row.get("degree_raw"))
         end_year = to_int(row.get("edu_end_year"))
-        country, _ = country_from_degree_row(row)
+        country, _ = infer_country_from_degree_row(row, institution_country_map)
+        signal = bachelor_degree_signal(row)
         after_phd = 1 if grad_year and end_year and end_year > grad_year else 0
         missing_end = 1 if end_year is None else 0
         explicit = 0 if degree == "bachelor" else 1
         contaminated = 1 if NON_BACHELOR_RE.search(raw) and degree != "bachelor" else 0
+        signal_rank = {
+            "degree_bachelor": 0,
+            "revelio_bachelor_pattern": 1,
+            "safe_bachelor_abbreviation": 2,
+            "safe_bachelor_word_or_typo": 3,
+            "safe_engineering_bachelor_equivalent": 4,
+        }.get(signal, 9)
         year = end_year if end_year is not None else 9999
         missing_country = 1 if not country else 0
-        return (after_phd, contaminated, explicit, missing_end, year, missing_country, degree_university(row).lower())
+        return (
+            after_phd,
+            contaminated,
+            explicit,
+            signal_rank,
+            missing_country,
+            missing_end,
+            year,
+            degree_university(row).lower(),
+        )
 
     return min(candidates, key=score), source
 
@@ -313,12 +412,17 @@ def html_shell(title: str, subtitle: str, body: str, data_script: str = "") -> s
     .stat .label {{ color: var(--muted); font-size: 13px; }}
     .controls {{ display: flex; gap: 14px; flex-wrap: wrap; align-items: end; margin: 0 0 16px; }}
     .control {{ display: flex; flex-direction: column; gap: 6px; min-width: 240px; }}
+    .title {{ font-size: 24px; font-weight: 700; margin-bottom: 4px; }}
+    .subtitle {{ color: var(--muted); font-size: 14px; margin-bottom: 14px; }}
+    .range-value {{ color: var(--muted); font-size: 13px; }}
+    .chart-box {{ position: relative; }}
     label {{ color: var(--muted); font-size: 13px; }}
     select, input {{ font: 15px Georgia, "Times New Roman", serif; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: white; color: var(--ink); }}
     table {{ width: 100%; border-collapse: collapse; font-size: 14px; }}
     th, td {{ border-top: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }}
     th {{ color: var(--muted); font-weight: 600; }}
     .chart {{ width: 100%; height: 460px; display: block; }}
+    .tooltip {{ position: absolute; pointer-events: none; background: rgba(34,34,34,0.94); color: white; padding: 8px 10px; border-radius: 6px; font-size: 12px; line-height: 1.35; opacity: 0; transform: translate(10px, -10px); white-space: nowrap; }}
     .note {{ color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 10px; }}
   </style>
 </head>
