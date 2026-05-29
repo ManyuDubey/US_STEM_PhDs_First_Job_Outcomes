@@ -1180,9 +1180,6 @@ def parse_sed_taxonomy_schema(xlsx_path: str) -> Tuple[List[str], List[str]]:
 
 def build_dashboard_payload(
     yearly_aggregate: Dict[int, Dict[str, int]],
-    broad_year_counts: Dict[int, Dict[str, int]],
-    sed_matched_counts: Dict[int, Dict[str, int]],
-    sed_broad_counts: Dict[int, Dict[str, int]],
     broad_year_aggregate: Dict[str, Dict[int, Dict[str, int]]],
     major_year_aggregate: Dict[str, Dict[int, Dict[str, int]]],
     broad_top_orgs: Dict[str, List[Dict[str, object]]],
@@ -1200,40 +1197,6 @@ def build_dashboard_payload(
             share = yearly_aggregate[year].get(cat, 0) / total if total else 0.0
             series.append({"year": year, "share": round(share, 6)})
         overall.append({"name": cat, "label": display_label(cat), "color": COLORS.get(cat, "#333"), "values": series})
-
-    broad_count_years = sorted(broad_year_counts)
-    broad_count_series = []
-    for field in FIELD_ORDER:
-        series = []
-        for year in broad_count_years:
-            count = broad_year_counts[year].get(field, 0)
-            series.append({"year": year, "value": count})
-        if any(v["value"] for v in series):
-            broad_count_series.append(
-                {"name": field, "label": field, "color": COLORS.get(field, "#333"), "values": series}
-            )
-
-    sed_comparison_fields = []
-    for field in FIELD_ORDER:
-        matched_series = []
-        sed_series = []
-        years_union = sorted(set(sed_matched_counts) | set(sed_broad_counts))
-        for year in years_union:
-            if year < 2014 or year > 2020:
-                continue
-            matched_series.append({"year": year, "value": sed_matched_counts.get(year, {}).get(field, 0)})
-            sed_series.append({"year": year, "value": sed_broad_counts.get(year, {}).get(field, 0)})
-        if any(v["value"] for v in matched_series) or any(v["value"] for v in sed_series):
-            sed_comparison_fields.append(
-                {
-                    "field": field,
-                    "slug": slugify(field),
-                    "series": [
-                        {"name": "Matched file", "label": "Matched file", "color": "#1f4e79", "values": matched_series},
-                        {"name": "SED", "label": "SED", "color": "#c43c39", "values": sed_series},
-                    ],
-                }
-            )
 
     broad_fields = []
     for field in FIELD_ORDER:
@@ -1281,14 +1244,6 @@ def build_dashboard_payload(
     return {
         "categories": [{"name": cat, "label": display_label(cat), "color": COLORS.get(cat, "#333")} for cat in categories],
         "overall": {"title": "Where US STEM PhDs Go First: Sector Trends by Graduation Year", "series": overall},
-        "overall_field_counts": {
-            "title": "US STEM PhD Graduates by Graduation Year and NSF Broad Field",
-            "series": broad_count_series,
-        },
-        "sed_comparison": {
-            "title": "Matched File vs. Survey of Earned Doctorates by NSF Broad Field",
-            "fields": sed_comparison_fields,
-        },
         "broad_fields": broad_fields,
         "major_fields": major_fields,
     }
@@ -1479,7 +1434,6 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
             <option value="overall">Overall sample</option>
             <option value="broad">NSF broad field</option>
             <option value="major">NSF major field</option>
-            <option value="sed">SED comparison</option>
           </select>
         </div>
         <div class="control">
@@ -1858,12 +1812,10 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
     const yearEndLabel = document.getElementById('year-end-label');
     const host = document.getElementById('chart-host');
     const allYears = [
-      ...new Set([
-        ...DATA.overall.series.flatMap((s) => s.values.map((v) => v.year)),
-        ...DATA.overall_field_counts.series.flatMap((s) => s.values.map((v) => v.year)),
-        ...DATA.broad_fields.flatMap((f) => f.series.flatMap((s) => s.values.map((v) => v.year))),
-        ...DATA.major_fields.flatMap((f) => f.series.flatMap((s) => s.values.map((v) => v.year))),
-        ...DATA.sed_comparison.fields.flatMap((f) => f.series.flatMap((s) => s.values.map((v) => v.year)))
+        ...new Set([
+          ...DATA.overall.series.flatMap((s) => s.values.map((v) => v.year)),
+          ...DATA.broad_fields.flatMap((f) => f.series.flatMap((s) => s.values.map((v) => v.year))),
+        ...DATA.major_fields.flatMap((f) => f.series.flatMap((s) => s.values.map((v) => v.year)))
       ])
     ].sort((a, b) => a - b);
     const minYear = allYears[0];
@@ -1890,7 +1842,6 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
     function currentCollection() {{
       if (viewSelect.value === 'broad') return DATA.broad_fields;
       if (viewSelect.value === 'major') return DATA.major_fields;
-      if (viewSelect.value === 'sed') return DATA.sed_comparison.fields;
       return [];
     }}
 
@@ -1922,25 +1873,6 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
           'Shares of first observed post-PhD jobs after deduplicating to one retained observation per rev_user_id. Government combines agencies and labs; academia is universities only.',
           DATA.overall.series,
           {{ mode: 'share', yLabel: 'Share of first jobs', yearRange: currentYearRange(), note: 'Note: The main job-outcome views are person-level. When the same rev_user_id appears multiple times, the dashboard keeps one retained observation using a deterministic preference for stronger employer and classification information.' }}
-        );
-        renderChart(
-          host,
-          DATA.overall_field_counts.title,
-          'Counts by graduation year across NSF broad fields after deduplicating to one retained observation per rev_user_id.',
-          DATA.overall_field_counts.series,
-          {{ mode: 'count', yLabel: 'Graduates in matched file', yearRange: currentYearRange(), note: 'Note: These counts are from the matched first-job file, not the full SED universe. Broad fields shown here are the SED taxonomy broad fields that occur above Psychology in the official schema file.' }}
-        );
-        return;
-      }}
-      if (viewSelect.value === 'sed') {{
-        const selectedSed = DATA.sed_comparison.fields.find((item) => item.slug === fieldSelect.value) || DATA.sed_comparison.fields[0];
-        if (!selectedSed) return;
-        renderChart(
-          host,
-          `${{DATA.sed_comparison.title}}: ${{selectedSed.field}}`,
-          'Solid blue line is the matched file counted by distinct pq_row_id; red line is the official NCSES SED count. This comparison is restricted to 2014–2020.',
-          selectedSed.series,
-          {{ mode: 'count', yLabel: 'Graduates', yearRange: currentYearRange(), note: 'Note: Unlike the main dashboard views, the matched-file side of this SED comparison uses distinct pq_row_id rather than rev_user_id. The official SED series currently comes from NCSES Table 1-2 and is shown only for 2014–2020.' }}
         );
         return;
       }}
@@ -1991,9 +1923,6 @@ def main() -> None:
     rows, diagnostics = load_and_recode()
     person_rows = dedupe_rows_by_rev_user_id(rows)
     yearly_aggregate = yearly_share_table(person_rows, "org_type_aggregate_v2")
-    broad_year_counts = yearly_count_table(person_rows, "nsf_broad_clean", allowed_groups=FIELD_ORDER)
-    sed_broad_counts = parse_sed_broad_counts(SED_BROAD_XLSX)
-    sed_matched_counts = yearly_distinct_id_count_table(rows, "nsf_broad_clean", "pq_row_id", allowed_groups=FIELD_ORDER)
     field_year_aggregate = field_year_share_table(person_rows, "org_type_aggregate_v2")
     major_year_aggregate = group_year_share_table(person_rows, "nsf_major", "org_type_aggregate_v2")
     broad_top_orgs = top_orgs_by_group(person_rows, "nsf_broad_clean", exclude_values=["Other / Small Fields"])
@@ -2043,9 +1972,6 @@ def main() -> None:
     write_dashboard_html(
         build_dashboard_payload(
             yearly_aggregate,
-            broad_year_counts,
-            sed_matched_counts,
-            sed_broad_counts,
             field_year_aggregate,
             major_year_aggregate,
             broad_top_orgs,

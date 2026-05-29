@@ -45,6 +45,7 @@ COLORS = [
 EXCLUDED_DISPLAY_COUNTRIES = {"United States"}
 ALL_UNIVERSITIES_ID = "__all_universities__"
 ALL_UNIVERSITIES_LABEL = "All universities"
+MAX_DASHBOARD_YEAR = 2019
 
 
 def load_carnegie_nsf_map() -> tuple[dict[tuple[str, str], Dict[str, str]], Counter]:
@@ -226,6 +227,7 @@ def series_for_group(
 def build_dashboard_payload(rows: list[Dict[str, str]], diagnostics: Counter) -> tuple[dict[str, object], list[Dict[str, object]]]:
     universities: dict[str, Dict[str, object]] = {}
     aggregates: list[Dict[str, object]] = []
+    display_stats: Counter = Counter()
     buckets: dict[str, dict[str, dict[str, dict[int, Counter]]]] = defaultdict(
         lambda: {
             "overall": defaultdict(lambda: defaultdict(Counter)),
@@ -237,14 +239,16 @@ def build_dashboard_payload(rows: list[Dict[str, str]], diagnostics: Counter) ->
     university_unitids: dict[str, str] = {}
 
     for row in rows:
+        year = common.to_int(row.get("grad_year"))
+        if year is None or year > MAX_DASHBOARD_YEAR:
+            continue
+        display_stats["display_included_users"] += 1
         country = row.get("bachelor_country", "")
         if not country:
             continue
+        display_stats["display_users_with_bachelor_country"] += 1
         inst_norm = row.get("phd_institution_norm", "")
         if not inst_norm:
-            continue
-        year = common.to_int(row.get("grad_year"))
-        if year is None:
             continue
         university_labels.setdefault(inst_norm, row.get("phd_institution", inst_norm))
         university_unitids.setdefault(inst_norm, row.get("carnegie_unitid", ""))
@@ -373,6 +377,15 @@ def build_dashboard_payload(rows: list[Dict[str, str]], diagnostics: Counter) ->
             "universities": len(actual_university_list),
             "year_min": min(all_years) if all_years else None,
             "year_max": max(all_years) if all_years else None,
+            "max_dashboard_year": MAX_DASHBOARD_YEAR,
+            "display_included_users": display_stats["display_included_users"],
+            "display_users_with_bachelor_country": display_stats["display_users_with_bachelor_country"],
+            "display_bachelor_country_coverage": round(
+                display_stats["display_users_with_bachelor_country"] / display_stats["display_included_users"],
+                4,
+            )
+            if display_stats["display_included_users"]
+            else 0,
         },
         "universities": compact_universities,
     }
@@ -418,7 +431,7 @@ def write_page(payload: dict[str, object]) -> None:
         <canvas id="country-chart" class="chart"></canvas>
         <div id="tooltip" class="tooltip"></div>
       </div>
-      <div class="note">Uses Carnegie PhD university names from codex_data/goid_user_id_nsf.csv. Social sciences, education, psychology, business, humanities and arts, and other non-science fields are excluded. United States is omitted from the plotted country series so international origins are visible. Percentages still use all users with an identified bachelor country as the denominator.</div>
+      <div class="note">Uses Carnegie PhD university names from codex_data/goid_user_id_nsf.csv. Graphs are limited to graduation years through 2019. Social sciences, education, psychology, business, humanities and arts, and other non-science fields are excluded. United States is omitted from the plotted country series so international origins are visible. The denominator is all PhDs in the selected university, field, and graduation year with an identified bachelor country, including United States bachelor degrees.</div>
     </div>
     <div class="card">
       <h2>Country Summary</h2>
@@ -479,10 +492,10 @@ def write_page(payload: dict[str, object]) -> None:
     function setStats() {{
       const s = DATA.summary || {{}};
       document.getElementById('stats').innerHTML = [
-        ['Included STEM users', fmt(s.included_users)],
-        ['With bachelor country', fmt(s.users_with_bachelor_country)],
+        ['Displayed PhD users', fmt(s.display_included_users)],
+        ['With bachelor country', fmt(s.display_users_with_bachelor_country)],
+        ['Bachelor-country coverage', pct(s.display_bachelor_country_coverage)],
         ['Universities', fmt(s.universities)],
-        ['Excluded fields', fmt(s.excluded_non_stem_or_social_science_users)]
       ].map(([label,value]) => `<div class="stat"><div class="value">${{value}}</div><div class="label">${{label}}</div></div>`).join('');
     }}
     function fillUniversities() {{
@@ -523,6 +536,26 @@ def write_page(payload: dict[str, object]) -> None:
       const padded = Math.min(1, Math.max(0.01, Number(maxShare || 0) * 1.05));
       const candidates = [0.01, 0.02, 0.03, 0.04, 0.05, 0.075, 0.1, 0.125, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.75, 1];
       return candidates.find(v => v >= padded) || 1;
+    }}
+    function layoutEndLabels(labels, minY, maxY, gap) {{
+      labels.sort((a, b) => a.targetY - b.targetY);
+      labels.forEach((label, i) => {{
+        label.y = Math.max(minY, Math.min(maxY, label.targetY));
+        if (i && label.y < labels[i - 1].y + gap) {{
+          label.y = labels[i - 1].y + gap;
+        }}
+      }});
+      if (labels.length) {{
+        const overflow = labels[labels.length - 1].y - maxY;
+        if (overflow > 0) labels.forEach(label => label.y -= overflow);
+        labels[0].y = Math.max(minY, labels[0].y);
+        for (let i = 1; i < labels.length; i++) {{
+          if (labels[i].y < labels[i - 1].y + gap) {{
+            labels[i].y = labels[i - 1].y + gap;
+          }}
+        }}
+      }}
+      return labels;
     }}
     function drawChart(group, yearStart, yearEnd) {{
       const canvas = document.getElementById('country-chart');
@@ -575,6 +608,7 @@ def write_page(payload: dict[str, object]) -> None:
         if (i % tickEvery !== 0 && i !== years.length - 1) return;
         ctx.fillText(String(year), x(year) - 13, height - 18);
       }});
+      const labelItems = [];
       series.forEach((s, idx) => {{
         ctx.strokeStyle = s.color;
         ctx.lineWidth = 2.3;
@@ -592,10 +626,26 @@ def write_page(payload: dict[str, object]) -> None:
           ctx.fill();
           hoverPoints.push({{x: xx, y: yy, series: s.name, year: v.year, share: v.share, count: v.count, total: v.total}});
         }});
-        const last = s.values[s.values.length - 1];
-        if (last) {{
-          ctx.fillText(s.label, width - margin.right + 18, y(last.share) + 4);
+        const labelValue = [...s.values].reverse().find(v => v.count > 0) || s.values[s.values.length - 1];
+        if (labelValue) {{
+          labelItems.push({{
+            label: s.label,
+            color: s.color,
+            x: x(labelValue.year),
+            targetY: y(labelValue.share)
+          }});
         }}
+      }});
+      const labelX = width - margin.right + 18;
+      layoutEndLabels(labelItems, margin.top + 8, height - margin.bottom - 8, 18).forEach(item => {{
+        ctx.strokeStyle = item.color;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(item.x + 5, item.targetY);
+        ctx.lineTo(labelX - 6, item.y);
+        ctx.stroke();
+        ctx.fillStyle = item.color;
+        ctx.fillText(item.label, labelX, item.y + 4);
       }});
     }}
     function renderTable(group, yearStart, yearEnd) {{
@@ -713,8 +763,10 @@ def main() -> None:
     summary = payload["summary"]
     print(f"Wrote {DOC_PATH}")
     print(
-        "Bachelor countries: "
-        f"{summary['users_with_bachelor_country']:,}/{summary['included_users']:,} included STEM users"
+        "Bachelor countries shown through "
+        f"{summary['max_dashboard_year']}: "
+        f"{summary['display_users_with_bachelor_country']:,}/"
+        f"{summary['display_included_users']:,} displayed STEM users"
     )
 
 
