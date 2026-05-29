@@ -19,6 +19,7 @@ OUT_CSV = os.path.join(OUT_DIR, "first_job_after_phd_classified_v2.csv")
 SED_BROAD_XLSX = os.path.join(OUT_DIR, "nsf25349-tab001-002.xlsx")
 OVERRIDES_JSON = os.path.join(ROOT, "config", "first_job_overrides.json")
 SED_TAXONOMY_XLSX = os.path.join(ROOT, "codex_data", "nsf25349-taba-004.xlsx")
+MAX_DASHBOARD_YEAR = 2019
 
 
 ORG_ORDER = [
@@ -1425,7 +1426,7 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
       <a href="bachelors_countries.html">Bachelor countries</a>
     </nav>
     <h1>First Jobs After PhD</h1>
-    <p class="sub">Interactive dashboard of first-job outcomes for U.S. STEM PhDs. Hover over points to see year and share.</p>
+    <p class="sub">Interactive dashboard of first-job outcomes for U.S. STEM PhDs through graduation year 2019. Hover over points to see year and share.</p>
     <div class="card">
       <div class="controls">
         <div class="control">
@@ -1922,13 +1923,18 @@ def main() -> None:
     FIELD_ORDER, MAJOR_ORDER = parse_sed_taxonomy_schema(SED_TAXONOMY_XLSX)
     rows, diagnostics = load_and_recode()
     person_rows = dedupe_rows_by_rev_user_id(rows)
-    yearly_aggregate = yearly_share_table(person_rows, "org_type_aggregate_v2")
-    field_year_aggregate = field_year_share_table(person_rows, "org_type_aggregate_v2")
-    major_year_aggregate = group_year_share_table(person_rows, "nsf_major", "org_type_aggregate_v2")
-    broad_top_orgs = top_orgs_by_group(person_rows, "nsf_broad_clean", exclude_values=["Other / Small Fields"])
-    major_top_orgs = top_orgs_by_group(person_rows, "nsf_major")
-    broad_org_year_counts = org_year_counts_by_group(person_rows, "nsf_broad_clean", exclude_values=["Other / Small Fields"])
-    major_org_year_counts = org_year_counts_by_group(person_rows, "nsf_major")
+    graph_rows = [
+        row
+        for row in person_rows
+        if (to_int(row.get("grad_year")) or 9999) <= MAX_DASHBOARD_YEAR
+    ]
+    yearly_aggregate = yearly_share_table(graph_rows, "org_type_aggregate_v2")
+    field_year_aggregate = field_year_share_table(graph_rows, "org_type_aggregate_v2")
+    major_year_aggregate = group_year_share_table(graph_rows, "nsf_major", "org_type_aggregate_v2")
+    broad_top_orgs = top_orgs_by_group(graph_rows, "nsf_broad_clean", exclude_values=["Other / Small Fields"])
+    major_top_orgs = top_orgs_by_group(graph_rows, "nsf_major")
+    broad_org_year_counts = org_year_counts_by_group(graph_rows, "nsf_broad_clean", exclude_values=["Other / Small Fields"])
+    major_org_year_counts = org_year_counts_by_group(graph_rows, "nsf_major")
 
     render_line_chart(
         yearly_aggregate,
@@ -1941,7 +1947,7 @@ def main() -> None:
             "Business (Unclassified)",
         ],
         "Where US STEM PhDs Go First: Sector Trends by Graduation Year",
-        "Shares of first observed post-PhD jobs. Government combines agencies and labs; academia is universities only.",
+        f"Shares of first observed post-PhD jobs through {MAX_DASHBOARD_YEAR}. Government combines agencies and labs; academia is universities only.",
         os.path.join(OUT_DIR, "chart_overall_sector_lines.svg"),
         y_max=0.70,
         show_line_end_labels=False,
@@ -1964,7 +1970,7 @@ def main() -> None:
             field_year_aggregate[field],
             field_categories,
             f"First-Job Sector Trends: {field}",
-            "Shares of first observed post-PhD jobs by graduation cohort within this NSF broad field.",
+            f"Shares of first observed post-PhD jobs by graduation cohort through {MAX_DASHBOARD_YEAR} within this NSF broad field.",
             os.path.join(OUT_DIR, f"chart_field_{slugify(field)}.svg"),
         )
 
