@@ -532,7 +532,7 @@ def write_page(payload: dict[str, object]) -> None:
         <canvas id="country-chart" class="chart"></canvas>
         <div id="tooltip" class="tooltip"></div>
       </div>
-      <div id="point-details" class="note">Click a point to see the top 7 destination countries for that group and graduation year, including the United States.</div>
+      <div id="point-details" class="note">Click a line to isolate that country. Click a point to see the top 7 destination countries for that group and graduation year, including the United States.</div>
       <div class="note">Sample is restricted to matched PhD recipients with an identified bachelor degree country outside the United States. The immediate measure uses the first observed post-PhD job. The 3-year and 5-year measures select the active job at graduation year plus 3 or 5, preferring the latest active start if jobs overlap. The U.S. is suppressed in the plotted lines so non-U.S. destinations remain readable, but it is retained in click details and tables. Shares use users with a known country at the selected timing as the denominator; missing country is reported in the summary but not plotted. Graduation cohorts are shown through 2019.</div>
     </div>
     <div class="card">
@@ -558,6 +558,8 @@ def write_page(payload: dict[str, object]) -> None:
     const pointDetails = document.getElementById('point-details');
     const suppressedPlotCountries = new Set(['United States']);
     let hoverPoints = [];
+    let hoverSegments = [];
+    let selectedSeries = null;
 
     function unpackGroup(g) {
       if (!g) return null;
@@ -674,6 +676,7 @@ def write_page(payload: dict[str, object]) -> None:
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
       hoverPoints = [];
+      hoverSegments = [];
       if (!group || !group.series.length) {
         ctx.fillStyle = '#666';
         ctx.font = '15px Georgia';
@@ -714,21 +717,38 @@ def write_page(payload: dict[str, object]) -> None:
         if (i % tickEvery !== 0 && i !== years.length - 1) return;
         ctx.fillText(String(year), x(year) - 13, height - 18);
       });
+      const selectedVisible = selectedSeries && series.some(s => s.name === selectedSeries);
+      if (!selectedVisible) selectedSeries = null;
+      const drawSeries = selectedSeries
+        ? [...series.filter(s => s.name !== selectedSeries), ...series.filter(s => s.name === selectedSeries)]
+        : series;
       const labelItems = [];
-      series.forEach((s) => {
-        ctx.strokeStyle = s.color;
-        ctx.lineWidth = 2.3;
+      drawSeries.forEach((s) => {
+        const isSelected = !selectedSeries || s.name === selectedSeries;
+        ctx.globalAlpha = isSelected ? 1 : 0.22;
+        ctx.strokeStyle = isSelected ? s.color : '#3f3f3f';
+        ctx.lineWidth = isSelected ? 3.2 : 1.6;
         ctx.beginPath();
         s.values.forEach((v, i) => {
           const xx = x(v.year), yy = y(v.share);
           if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy);
+          if (i) {
+            const prev = s.values[i - 1];
+            hoverSegments.push({
+              x1: x(prev.year),
+              y1: y(prev.share),
+              x2: xx,
+              y2: yy,
+              series: s.name
+            });
+          }
         });
         ctx.stroke();
-        ctx.fillStyle = s.color;
+        ctx.fillStyle = isSelected ? s.color : '#3f3f3f';
         s.values.forEach((v) => {
           const xx = x(v.year), yy = y(v.share);
           ctx.beginPath();
-          ctx.arc(xx, yy, 3, 0, Math.PI * 2);
+          ctx.arc(xx, yy, isSelected ? 3.6 : 2.4, 0, Math.PI * 2);
           ctx.fill();
           hoverPoints.push({
             x: xx,
@@ -742,10 +762,18 @@ def write_page(payload: dict[str, object]) -> None:
           });
         });
         const labelValue = [...s.values].reverse().find(v => v.count > 0) || s.values[s.values.length - 1];
-        if (labelValue) labelItems.push({label: s.label, color: s.color, x: x(labelValue.year), targetY: y(labelValue.share)});
+        if (labelValue) labelItems.push({
+          label: s.label,
+          color: isSelected ? s.color : '#3f3f3f',
+          alpha: isSelected ? 1 : 0.35,
+          x: x(labelValue.year),
+          targetY: y(labelValue.share)
+        });
       });
+      ctx.globalAlpha = 1;
       const labelX = width - margin.right + 18;
       layoutEndLabels(labelItems, margin.top + 8, height - margin.bottom - 8, 18).forEach(item => {
+        ctx.globalAlpha = item.alpha;
         ctx.strokeStyle = item.color;
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -755,6 +783,7 @@ def write_page(payload: dict[str, object]) -> None:
         ctx.fillStyle = item.color;
         ctx.fillText(item.label, labelX, item.y + 4);
       });
+      ctx.globalAlpha = 1;
     }
     function renderTable(group, yearStart, yearEnd) {
       if (!group) {
@@ -785,7 +814,7 @@ def write_page(payload: dict[str, object]) -> None:
     }
     function renderPointDetails(point) {
       if (!point || !point.breakdown || !point.breakdown.countries.length) {
-        pointDetails.innerHTML = 'Click a point to see the top 7 destination countries for that group and graduation year, including the United States.';
+        pointDetails.innerHTML = 'Click a line to isolate that country. Click a point to see the top 7 destination countries for that group and graduation year, including the United States.';
         return;
       }
       const rows = point.breakdown.countries
@@ -805,6 +834,28 @@ def write_page(payload: dict[str, object]) -> None:
         if (d < bestDist) { best = p; bestDist = d; }
       });
       return {point: best, distance: bestDist, x: mx, y: my};
+    }
+    function distanceToSegment(px, py, seg) {
+      const dx = seg.x2 - seg.x1;
+      const dy = seg.y2 - seg.y1;
+      const lenSq = dx * dx + dy * dy;
+      if (!lenSq) return Math.hypot(px - seg.x1, py - seg.y1);
+      const t = Math.max(0, Math.min(1, ((px - seg.x1) * dx + (py - seg.y1) * dy) / lenSq));
+      return Math.hypot(px - (seg.x1 + t * dx), py - (seg.y1 + t * dy));
+    }
+    function nearestSeriesHit(event) {
+      const pointHit = nearestPoint(event);
+      let bestSegment = null, bestSegmentDist = 9999;
+      hoverSegments.forEach(seg => {
+        const d = distanceToSegment(pointHit.x, pointHit.y, seg);
+        if (d < bestSegmentDist) { bestSegment = seg; bestSegmentDist = d; }
+      });
+      return {
+        ...pointHit,
+        segment: bestSegment,
+        segmentDistance: bestSegmentDist,
+        series: pointHit.distance <= 14 && pointHit.point ? pointHit.point.series : (bestSegmentDist <= 8 && bestSegment ? bestSegment.series : null)
+      };
     }
     function render() {
       const group = selectedGroup();
@@ -831,14 +882,15 @@ def write_page(payload: dict[str, object]) -> None:
       tooltip.style.opacity = 1;
     });
     document.getElementById('country-chart').addEventListener('click', (event) => {
-      const hit = nearestPoint(event);
-      if (!hit.point || hit.distance > 14) return;
-      renderPointDetails(hit.point);
+      const hit = nearestSeriesHit(event);
+      selectedSeries = hit.series;
+      render();
+      if (hit.point && hit.distance <= 14) renderPointDetails(hit.point);
     });
     document.getElementById('country-chart').addEventListener('mouseleave', () => tooltip.style.opacity = 0);
-    horizonSelect.addEventListener('change', () => { setStats(); fillGroups(); });
-    viewSelect.addEventListener('change', fillGroups);
-    groupSelect.addEventListener('change', updateYearBounds);
+    horizonSelect.addEventListener('change', () => { selectedSeries = null; setStats(); fillGroups(); });
+    viewSelect.addEventListener('change', () => { selectedSeries = null; fillGroups(); });
+    groupSelect.addEventListener('change', () => { selectedSeries = null; updateYearBounds(); });
     startInput.addEventListener('input', () => syncYears('start'));
     endInput.addEventListener('input', () => syncYears('end'));
     window.addEventListener('resize', render);
