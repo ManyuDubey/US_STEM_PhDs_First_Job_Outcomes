@@ -515,15 +515,17 @@ def write_page(payload: dict[str, object]) -> None:
           <label for="group-select">Group</label>
           <select id="group-select"></select>
         </div>
-        <div class="control">
+        <div class="year-controls">
+        <div class="control year-control">
           <label for="year-start">Start year</label>
           <input id="year-start" type="range">
           <span id="year-start-label" class="range-value"></span>
         </div>
-        <div class="control">
+        <div class="control year-control">
           <label for="year-end">End year</label>
           <input id="year-end" type="range">
           <span id="year-end-label" class="range-value"></span>
+        </div>
         </div>
       </div>
       <div id="chart-title" class="title"></div>
@@ -618,7 +620,7 @@ def write_page(payload: dict[str, object]) -> None:
     }
     function fillGroups() {
       const groups = selectedGroups();
-      groupSelect.innerHTML = groups.map((g, i) => `<option value="${i}">${g.group} (${fmt(g.n)})</option>`).join('');
+      groupSelect.innerHTML = groups.map((g, i) => `<option value="${i}">${g.group}</option>`).join('');
       if (!groups.length) groupSelect.innerHTML = '<option value="0">No data</option>';
       updateYearBounds();
     }

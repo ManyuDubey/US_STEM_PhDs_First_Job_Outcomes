@@ -412,6 +412,9 @@ def html_shell(title: str, subtitle: str, body: str, data_script: str = "") -> s
     .stat .label {{ color: var(--muted); font-size: 13px; }}
     .controls {{ display: flex; gap: 14px; flex-wrap: wrap; align-items: end; margin: 0 0 16px; }}
     .control {{ display: flex; flex-direction: column; gap: 6px; min-width: 240px; }}
+    .year-controls {{ display: flex; gap: 14px; flex: 1 1 520px; min-width: min(520px, 100%); }}
+    .year-control {{ flex: 1 1 0; min-width: 0; }}
+    .year-control input[type="range"] {{ box-sizing: border-box; width: 100%; }}
     .title {{ font-size: 24px; font-weight: 700; margin-bottom: 4px; }}
     .subtitle {{ color: var(--muted); font-size: 14px; margin-bottom: 14px; }}
     .range-value {{ color: var(--muted); font-size: 13px; }}
