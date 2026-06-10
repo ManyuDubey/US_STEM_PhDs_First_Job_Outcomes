@@ -1,15 +1,19 @@
 # First Job After PhD Classified Dataset
 
-This README summarizes how the `first_job_after_phd_classified` dataset was created, what sources were used, and what known leakage/data-quality issues to keep in mind when using it in Codex or downstream analysis.
+This README summarizes how the legacy `first_job_after_phd_classified` dataset was created, what sources were used, and what known leakage/data-quality issues to keep in mind when using it in Codex or downstream analysis.
 
-## Main files
+The active dashboard workflow no longer reads these legacy files. Use `python3 scripts/refresh_post_phd_dashboard.py`, which builds from `codex_data/post_phd_job_history_mapped.csv` through `codex_data/post_phd_first_job_dashboard_input.csv`.
 
-Recommended local files:
+## Legacy files
 
-- `first_job_after_phd_classified.parquet` — main dataset for Python/Codex work
-- `first_job_after_phd_classified.csv` — CSV backup
-- `first_job_after_phd_classified_schema.json` — column names, dtypes, and shape
-- `first_job_after_phd_classified_preview.csv` — small preview sample
+Archived local files are stored in `legacy_data/`:
+
+- `legacy_data/first_job_after_phd_classified.parquet` — archived main dataset
+- `legacy_data/first_job_after_phd_classified.csv` — archived CSV backup
+- `legacy_data/first_job_after_phd_classified_schema.json` — archived column names, dtypes, and shape
+- `legacy_data/first_job_after_phd_classified_preview.csv` — archived small preview sample
+
+Keep these for audit and comparison only. They are not inputs to the current GitHub Pages dashboard refresh.
 
 ## Dataset purpose
 
@@ -354,111 +358,92 @@ When using this dataset in Codex, start with:
 
 ## Current local analysis and dashboard setup
 
-This folder now contains a repeatable local pipeline for refreshing first-job visualizations and a publishable GitHub Pages dashboard.
+Status as of May 30, 2026: this folder contains a repeatable local pipeline for the current post-PhD job-history dataset and a publishable GitHub Pages dashboard with three pages.
 
-Key local files:
+Published pages:
 
-- `scripts/first_job_graphs.py` — main classification refresh and dashboard generator
-- `scripts/refresh_first_job_dashboard.py` — one-command refresh entrypoint
-- `config/first_job_overrides.json` — persistent override layer for name standardization and classification fixes
-- `outputs/first_job_graphs/dashboard.html` — latest local interactive dashboard
-- `docs/index.html` — GitHub Pages publish target
-- `outputs/first_job_graphs/refresh_metadata.json` — machine-readable metadata for the last refresh
-- `outputs/first_job_graphs/refresh_metadata.md` — human-readable metadata for the last refresh
+- `docs/index.html` — landing page
+- `docs/dashboard.html` — First Jobs After PhD
+- `docs/ncses_comparison.html` — NCSES / ProQuest / matched-ProQuest coverage
+- `docs/bachelors_countries.html` — bachelor-degree country origins
+- `docs/first_job_countries_non_us_bachelors.html` — International Migration of Non-US PhDs, covering destination countries immediately after the PhD, 3 years later, and 5 years later for non-U.S. bachelor-origin PhDs
 
-### One-command refresh workflow
+Current public URL:
 
-The current refresh workflow is:
+- `https://manyudubey.github.io/US_STEM_PhDs_First_Job_Outcomes/`
+
+### Current refresh workflow
+
+Use the post-PhD refresh entrypoint:
 
 ```bash
-python3 scripts/refresh_first_job_dashboard.py
+python3 scripts/refresh_post_phd_dashboard.py
 ```
 
-What this does:
+This runs, in order:
 
-- validates the current first-job CSV input
-- reruns the current classification refresh logic plus persistent overrides
-- rebuilds static SVG outputs
-- rebuilds the interactive dashboard
-- refreshes top-organization tables
-- writes refresh metadata
-- writes publishable GitHub Pages files into `docs/`
+- `scripts/build_post_phd_first_job_input.py`
+- `scripts/refresh_first_job_dashboard.py`
+- `scripts/build_ncses_comparison_page.py`
+- `scripts/build_bachelors_country_page.py`
+- `scripts/build_first_job_country_page.py`
 
-### Current input assumptions
+The older `python3 scripts/refresh_first_job_dashboard.py` still refreshes the first-job page, but it does not rebuild the NCSES or bachelor-country pages. Use `refresh_post_phd_dashboard.py` when preparing the site for GitHub Pages.
 
-The refresh wrapper currently expects a CSV input file, not Parquet, in the local environment.
+### Current raw inputs
 
-Preferred input file:
+The current dashboard build depends on these local raw inputs:
 
-- `codex_data/first_job_after_phd_classified.csv`
+- `codex_data/post_phd_job_history_mapped.csv`
+- `codex_data/goid_user_id_nsf.csv`
+- `deg_info.csv`
+- `pq.csv`
+- `ncses_table_srv_data_SED_2026-05-26T19_44_34Z.zip`
 
-The wrapper can auto-detect newer matching CSV files in `codex_data/` if the canonical name is absent, but the canonical CSV filename is the safest workflow.
+Raw inputs are local working files and should not be pushed unless there is an explicit decision to version them. At the moment, `deg_info.csv`, `pq.csv`, and the NCSES zip are untracked local files.
 
-### Persistent override layer
+### First Jobs After PhD page
 
-Durable corrections now live in:
+The first-job page is generated from `codex_data/post_phd_job_history_mapped.csv` via `codex_data/post_phd_first_job_dashboard_input.csv`.
 
-- `config/first_job_overrides.json`
+Current operational rule:
 
-This file is loaded on every refresh and is intended to accumulate improvements over time across backend data versions.
+- `job_order == 1` is treated as the first post-PhD job sequence marker for each `rev_user_id`.
 
-Current supported override types:
+Important nuance:
 
-- `org_name_overrides` — standardize organization display names
-- `classification_exact_overrides` — force an org type for exact organization names
-- `classification_regex_overrides` — force an org type based on regex patterns
+- `job_order` is not always unique per user.
+- If a one-row-per-user extract is needed, use `job_order == 1` and then break ties deterministically, for example by earliest `job_start_year`, lowest `position_number`, or lowest `position_id`.
+- Some later-ordered rows can have earlier `job_start_year`; these appear to be pre-PhD cases, overlapping jobs, or timing noise and should not overturn `job_order == 1`.
 
-This means future dataset refreshes do not start from scratch; they inherit the persistent standardization and classification fixes recorded in the config file.
+The First Jobs page is capped at graduation years `1980-2019`.
 
-### Dashboard scope
+The removed SED comparison is no longer shown on the First Jobs page.
 
-The dashboard currently includes:
+### First-job classification rules
 
-- overall sector trends over graduation years
-- overall graduate counts by NSF broad field
-- a separate SED comparison view for NSF broad fields
-- interactive field-level trends for `nsf_broad`
-- interactive field-level trends for `nsf_major`
-- top 10 organizations for selected broad and major fields
+The current first-job classifier uses:
 
-The dashboard has:
+- Carnegie `cchie` categories from `goid_user_id_nsf.csv` for universities, R1/R2 universities, medical schools, and research institutions.
+- DISCERN public-firm signals for publicly listed firms.
+- PitchBook-backed timing signals for startup-backed firms.
+- A lightweight non-US listed-company classification.
+- Fallback regex and NAICS/name rules for government labs, public sector, hospitals, universities, research nonprofits, self-employment, business-like residuals, and other residuals.
 
-- click-to-pin chart inspection
-- dropdown selectors
-- global start-year and end-year sliders
-- note-style methodological text under charts and tables
+Important unresolved issue:
 
-### Counting rules used in the dashboard
+- Some public-company classification is not fully date-aware yet. For example, Google / Alphabet can still be treated as a public firm before the IPO in the current first-job output. This is known and should be fixed later with date-aware public/startup logic.
 
-Main job-outcome views are now person-level rather than row-level.
+### First-job graph fields
 
-- overall job graphs use one retained observation per `rev_user_id`
-- broad-field and major-field job graphs use the same `rev_user_id` person-level base
-- top-organization tables under those field graphs also use the `rev_user_id` person-level base
+The First Jobs page excludes the same non-STEM/social-science block used elsewhere:
 
-When multiple rows share a `rev_user_id`, the pipeline keeps one row using a deterministic preference for stronger information, including:
-
-- non-`Other / Unclassified` classifications
-- higher classification confidence
-- stronger organization identifiers and naming fields
-- earlier first-job timing as a tie-breaker
-
-The SED comparison is intentionally separate:
-
-- matched-file counts in the SED comparison use distinct `pq_row_id`
-- official SED counts come from the external SED source file
-
-### Field taxonomy restriction used in field graphs
-
-Field-level graphs no longer use an ad hoc hardcoded field list alone. They are now restricted using the official SED taxonomy file:
-
-- `codex_data/nsf25349-taba-004.xlsx`
-
-Rule used:
-
-- keep only broad and major fields that occur above `Psychology` in the SED taxonomy ordering
-
-This means the field-level dashboard views are intended to stay within the STEM block above `Psychology` in the official taxonomy. The source data are not edited for this restriction; it is applied at the dashboard/filtering layer.
+- `business`
+- `education`
+- `humanities and arts`
+- `other non science and engineering`
+- `psychology`
+- `social sciences`
 
 Current included broad fields are:
 
@@ -472,124 +457,150 @@ Current included broad fields are:
 - `Multidisciplinary sciences`
 - `Physical sciences`
 
-### Dashboard publishing
+### NCSES / ProQuest comparison page
 
-The dashboard is currently set up for GitHub Pages publishing from `docs/`.
+The NCSES page compares three series by year, institution, and NSF field:
 
-Current public URL:
+- NCSES official doctorate counts
+- ProQuest baseline counts
+- matched ProQuest counts from the matched post-PhD data
 
-- `https://manyudubey.github.io/US_STEM_PhDs_First_Job_Outcomes/`
+Current count units:
 
-The refresh script automatically updates:
+- NCSES counts are summed from `Doctorate Recipients by Institution` in the NCSES zip.
+- ProQuest baseline counts distinct `pq_goid_row` values from `pq.csv`, falling back to `goid` only if `pq_goid_row` is missing.
+- Matched ProQuest counts distinct matched `goid` values, falling back to `rev_user_id` only if `goid` is missing.
 
-- `docs/index.html`
-- `docs/dashboard.html`
-- `docs/.nojekyll`
+Current NCSES page scope:
+
+- years `1980-2019`
+- same social-science / humanities exclusions as the other pages
+- Carnegie institution names are the canonical institution names
+
+Current NCSES totals after filtering:
+
+- NCSES: `872,979`
+- ProQuest baseline: `831,904`
+- matched ProQuest: `354,992`
+- ProQuest / NCSES coverage: `95.3%`
+- matched ProQuest / NCSES coverage: `40.7%`
+- matched NCSES institutions: `367 / 422`
+
+Field-name handling:
+
+- NCSES uses `Trend Broad Fields` and `Trend Major Fields`.
+- ProQuest uses `nsf_broad` and `nsf_major`.
+- Matched ProQuest uses NSF fields from `goid_user_id_nsf.csv`.
+- Labels are cleaned and normalized before comparison.
+- One explicit alias is currently used: `Multidisciplinary/ interdisciplinary sciences` -> `Multidisciplinary sciences`.
+
+Institution-name handling:
+
+- Canonical names come from Carnegie names in `pq.csv` and `goid_user_id_nsf.csv`.
+- NCSES institution names are crosswalked to Carnegie names using manual aliases, normalized exact/variant matches, unique prefix matches, and conservative fuzzy matching.
+- The crosswalk output is written to `outputs/first_job_graphs/ncses_comparison/ncses_institution_crosswalk.csv`.
+
+Known NCSES comparison caveats:
+
+- Coverage can exceed `100%` for some institution-field-year cells because ProQuest, NCSES, and Carnegie taxonomy boundaries do not always align.
+- Some unmatched NCSES institutions remain and need manual alias work.
+- `Multidisciplinary sciences` appears in ProQuest/matched data but not as a nonzero NCSES broad-field total in the current NCSES extract, so treat that row as taxonomy mismatch rather than substantive overcoverage.
+
+### Bachelor countries page
+
+The bachelor-country page uses `deg_info.csv` to infer bachelor-degree country origins for matched PhDs.
+
+Current rules:
+
+- Graduation year is `grad_year`.
+- PhD university is standardized to `carnegie_name`.
+- Social sciences, education, psychology, business, humanities/arts, and other non-science fields are excluded.
+- United States is omitted from the plotted country series so non-US sending countries are visible.
+- The denominator still includes all PhDs in the selected university, field, and graduation year with an identified bachelor country, including U.S. bachelor degrees.
+- Graphs are capped at `2019`.
+
+Bachelor-row inference currently recognizes:
+
+- explicit Revelio bachelor rows
+- bachelor-like degree strings
+- safe bachelor abbreviations
+- safe medical bachelor equivalents such as `MBBS`
+- safe engineering bachelor equivalents
+- selected typo/word variants
+
+Current bachelor-country summary:
+
+- total matched users: `387,625`
+- included STEM/non-social-science users: `384,385`
+- display users through 2019 after exclusions: `355,365`
+- users with bachelor country through 2019 after exclusions: `274,794`
+- display bachelor-country coverage: `77.3%`
+
+### Job countries for non-U.S. bachelor origins
+
+The job-country destination page joins `codex_data/post_phd_first_job_dashboard_input.csv`, `codex_data/post_phd_job_history_mapped.csv`, and `outputs/first_job_graphs/bachelors_countries/bachelor_country_by_user.csv`.
+
+Current rules:
+
+- The sample is restricted to matched PhD recipients with an identified bachelor country outside the United States.
+- The immediate outcome is the `country` field on the first observed post-PhD job.
+- The 3-year and 5-year outcomes select the active job at `grad_year + 3` and `grad_year + 5`, preferring the latest active start if jobs overlap.
+- Destination displays keep the top 7 countries for each group, including the United States.
+- United States is suppressed in the plotted country lines so smaller destination countries are readable, but it remains visible in the click details and summary tables.
+- Shares use users with a known country at the selected timing as the denominator; missing country is reported in the summary but not plotted.
+- Graph views include overall, U.S. versus non-U.S., NSF broad field, NSF major field, bachelor country, and PhD university.
+- Graphs are capped at `2019`.
+
+Current outputs:
+
+- `docs/first_job_countries_non_us_bachelors.html`
+- `outputs/first_job_graphs/first_job_countries_non_us_bachelors/first_job_country_by_non_us_bachelor_user.csv`
+- `outputs/first_job_graphs/first_job_countries_non_us_bachelors/first_job_country_time_series.csv`
+- `outputs/first_job_graphs/first_job_countries_non_us_bachelors/summary.json`
 
 ### Git hygiene
 
-Raw data must not be pushed to GitHub.
+Raw data should not be pushed to GitHub unless explicitly intended.
 
-This is enforced locally through:
-
-- `.gitignore`
-
-Current ignored local data path:
-
-- `codex_data/`
-
-The intended Git workflow after a dashboard refresh is:
+Before committing, inspect:
 
 ```bash
-python3 scripts/refresh_first_job_dashboard.py
-git add docs scripts config .gitignore
-git commit -m "Refresh dashboard"
+git status
+```
+
+Typical site/code commit:
+
+```bash
+git add docs/dashboard.html docs/ncses_comparison.html docs/bachelors_countries.html docs/first_job_countries_non_us_bachelors.html docs/index.html scripts/build_ncses_comparison_page.py scripts/build_bachelors_country_page.py scripts/build_first_job_country_page.py scripts/first_job_graphs.py scripts/refresh_post_phd_dashboard.py scripts/build_post_phd_first_job_input.py
+git commit -m "Refresh PhD dashboard pages"
 git push
 ```
 
 Do not use `git add .` unless you have explicitly checked what is being staged.
 
-### Current classification status
-
-The current refreshed classification file is:
-
-- `outputs/first_job_graphs/first_job_after_phd_classified_v2.csv`
-
-The latest targeted override passes have reduced the true residual bucket substantially.
-
-Current residual counts:
-
-- `Other / Unclassified`: `26,448` rows (`8.44%`)
-- `Business (Unclassified)`: `26,401` rows (`8.43%`)
-
-Important interpretation:
-
-- `Other / Unclassified` is the real residual bucket with insufficient signal
-- `Business (Unclassified)` means the employer looks business-like but cannot yet be confidently pushed into `Listed Company` or `Startup / VC-backed Private Firm`
-
-Recent improvements were driven by the persistent override file:
-
-- exact-name overrides for major labs, institutes, hospitals, universities, and agencies
-- regex overrides for NIH-style sub-institutes and research-center / research-institute names
-- organization-name standardization fixes used in the ranking tables
-
-### Organization table logic
-
-The top-organization tables in the dashboard do not require an `rcid` match.
-
-For each retained person-level row, the dashboard uses the best available organization name in this priority order:
-
-1. `revelio_primary_name`
-2. `revelio_company`
-3. `ultimate_parent_rcid_name`
-4. `company_raw`
-5. `company_cleaned`
-
-Then any persistent organization-name overrides from `config/first_job_overrides.json` are applied.
-
-The field-level top-organization tables are dynamic:
-
-- they update when the global year slider changes
-- they are computed from the current selected year window
-
-### SED comparison status
-
-Official SED broad-field comparison data currently come from:
-
-- `outputs/first_job_graphs/nsf25349-tab001-002.xlsx`
-
-The dashboard currently restricts the matched-file versus SED comparison to:
-
-- `2014–2020`
-
-There is also a saved NCSES builder selection file in:
-
-- `codex_data/ncses_cust_table_SED_2026-05-07T21_24_18Z.json`
-
-Important:
-
-- that JSON is a table-definition / selection file
-- it is not the actual numeric SED table export
-- it confirms the builder uses the relevant trend broad and trend major field structures, but by itself it does not extend the numeric SED series
-
 ### What a future Codex session should know
 
 If a future Codex session is asked to get up to date in this directory, it should read this README first, then inspect:
 
-1. `outputs/first_job_graphs/refresh_metadata.md`
-2. `config/first_job_overrides.json`
-3. `scripts/refresh_first_job_dashboard.py`
-4. `scripts/first_job_graphs.py`
-5. `outputs/first_job_graphs/CHANGELOG.md`
+1. `docs/README.md`
+2. `outputs/first_job_graphs/post_phd_first_job_dashboard_input_audit.md`
+3. `outputs/first_job_graphs/ncses_comparison/summary.json`
+4. `outputs/first_job_graphs/bachelors_countries/summary.json`
+5. `scripts/refresh_post_phd_dashboard.py`
+6. `scripts/build_post_phd_first_job_input.py`
+7. `scripts/first_job_graphs.py`
+8. `scripts/build_ncses_comparison_page.py`
+9. `scripts/build_bachelors_country_page.py`
+10. `scripts/build_first_job_country_page.py`
 
 If a new backend dataset has been dropped into `codex_data/`, the first operational step should usually be:
 
 ```bash
-python3 scripts/refresh_first_job_dashboard.py
+python3 scripts/refresh_post_phd_dashboard.py
 ```
 
 If the task involves the public dashboard, also remember:
 
-- `docs/index.html` is the GitHub Pages entrypoint
-- the public site is `https://manyudubey.github.io/US_STEM_PhDs_First_Job_Outcomes/`
-- raw files in `codex_data/` must not be pushed to GitHub
+- `docs/index.html` is the GitHub Pages entrypoint.
+- The public site is `https://manyudubey.github.io/US_STEM_PhDs_First_Job_Outcomes/`.
+- Raw files in `codex_data/` and large root CSV/ZIP inputs must not be pushed without an explicit decision.

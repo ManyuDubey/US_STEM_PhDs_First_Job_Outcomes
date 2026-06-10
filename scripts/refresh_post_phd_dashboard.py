@@ -7,6 +7,7 @@ from pathlib import Path
 
 import build_post_phd_first_job_input as builder
 import build_bachelors_country_page as bachelors
+import build_first_job_country_page as first_job_countries
 import build_ncses_comparison_page as ncses
 import first_job_graphs as fjg
 import refresh_first_job_dashboard as refresh
@@ -40,6 +41,7 @@ def main() -> None:
     refresh.publish_docs()
     ncses.main()
     bachelors.main()
+    first_job_countries.main()
 
     print(f"Built first-job input from {builder.MAPPED_CSV.name}")
     print(f"Rows: {validation['row_count']} | Years: {validation['min_grad_year']}-{validation['max_grad_year']}")

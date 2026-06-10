@@ -433,6 +433,7 @@ def html_shell(title: str, subtitle: str, body: str, data_script: str = "") -> s
       <a href="dashboard.html">First jobs</a>
       <a href="ncses_comparison.html">NCSES comparison</a>
       <a href="bachelors_countries.html">Bachelor countries</a>
+      <a href="first_job_countries_non_us_bachelors.html">International Migration of Non-US PhDs</a>
     </nav>
     <h1>{html.escape(title)}</h1>
     <p class="sub">{html.escape(subtitle)}</p>

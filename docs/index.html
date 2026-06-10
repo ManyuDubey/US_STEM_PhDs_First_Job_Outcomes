@@ -61,7 +61,7 @@
     }
     .links {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 18px;
       margin-top: 30px;
     }
@@ -110,6 +110,10 @@
     }
     .tile:nth-child(2) .bar { background: var(--green); }
     .tile:nth-child(3) .bar { background: var(--gold); }
+    .tile:nth-child(4) .bar { background: var(--red); }
+    @media (max-width: 1100px) {
+      .links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
     @media (max-width: 860px) {
       nav { margin-bottom: 34px; }
       .links { grid-template-columns: 1fr; }
@@ -124,10 +128,11 @@
       <a href="dashboard.html">First jobs</a>
       <a href="ncses_comparison.html">NCSES comparison</a>
       <a href="bachelors_countries.html">Bachelor countries</a>
+      <a href="first_job_countries_non_us_bachelors.html">International Migration of Non-US PhDs</a>
     </nav>
     <section class="intro">
       <h1>PhD Outcomes Dashboard</h1>
-      <p class="sub">A compact portal for the first-job, NCSES coverage, and bachelor-country views built from the matched PhD dataset.</p>
+      <p class="sub">A compact portal for first jobs, NCSES coverage, bachelor-country origins, and international migration among non-US bachelor-origin PhDs.</p>
     </section>
     <section class="links" aria-label="Dashboard pages">
       <a class="tile" href="dashboard.html">
@@ -151,6 +156,14 @@
           <div class="kicker">Origins</div>
           <h2>Bachelor Countries</h2>
           <p>Top bachelor-degree countries overall and by broad field, major field, primary field, and PhD university.</p>
+        </div>
+        <div class="bar"></div>
+      </a>
+      <a class="tile" href="first_job_countries_non_us_bachelors.html">
+        <div>
+          <div class="kicker">Destinations</div>
+          <h2>International Migration of Non-US PhDs</h2>
+          <p>Destination countries immediately after the PhD, 3 years later, and 5 years later for non-U.S. bachelor-origin PhDs.</p>
         </div>
         <div class="bar"></div>
       </a>

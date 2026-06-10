@@ -13,7 +13,7 @@ from typing import Dict, Iterable, List, Sequence, Tuple
 
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-INPUT_CSV = os.path.join(ROOT, "codex_data", "first_job_after_phd_classified.csv")
+INPUT_CSV = os.path.join(ROOT, "codex_data", "post_phd_first_job_dashboard_input.csv")
 OUT_DIR = os.path.join(ROOT, "outputs", "first_job_graphs")
 OUT_CSV = os.path.join(OUT_DIR, "first_job_after_phd_classified_v2.csv")
 SED_BROAD_XLSX = os.path.join(OUT_DIR, "nsf25349-tab001-002.xlsx")
@@ -1424,6 +1424,7 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
       <a href="dashboard.html">First jobs</a>
       <a href="ncses_comparison.html">NCSES comparison</a>
       <a href="bachelors_countries.html">Bachelor countries</a>
+      <a href="first_job_countries_non_us_bachelors.html">International Migration of Non-US PhDs</a>
     </nav>
     <h1>First Jobs After PhD</h1>
     <p class="sub">Interactive dashboard of first-job outcomes for U.S. STEM PhDs through graduation year 2019. Hover over points to see year and share.</p>
