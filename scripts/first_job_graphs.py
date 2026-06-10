@@ -1483,13 +1483,15 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
       container.appendChild(card);
 
       const dpr = window.devicePixelRatio || 1;
-      const width = 1500;
+      const width = Math.max(900, Math.round(box.clientWidth || canvas.clientWidth || 1500));
       const height = 520;
       canvas.width = width * dpr;
       canvas.height = height * dpr;
+      canvas.style.width = '100%';
       canvas.style.height = height + 'px';
       overlay.width = width * dpr;
       overlay.height = height * dpr;
+      overlay.style.width = '100%';
       overlay.style.height = height + 'px';
       overlay.style.position = 'absolute';
       overlay.style.left = '0';
@@ -1746,8 +1748,8 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
 
       function nearestYearEntry(clientX, clientY) {{
         const rect = canvas.getBoundingClientRect();
-        const mx = clientX - rect.left;
-        const my = clientY - rect.top;
+        const mx = (clientX - rect.left) * (width / Math.max(rect.width, 1));
+        const my = (clientY - rect.top) * (height / Math.max(rect.height, 1));
         if (mx < margin.left || mx > margin.left + plotW || my < margin.top || my > margin.top + plotH) {{
           return null;
         }}
@@ -1764,8 +1766,8 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
       }}
       function nearestPoint(clientX, clientY) {{
         const rect = canvas.getBoundingClientRect();
-        const mx = clientX - rect.left;
-        const my = clientY - rect.top;
+        const mx = (clientX - rect.left) * (width / Math.max(rect.width, 1));
+        const my = (clientY - rect.top) * (height / Math.max(rect.height, 1));
         let best = null;
         let bestDist = Infinity;
         yearLookup.forEach((yearEntry) => {{
@@ -1837,8 +1839,8 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
       canvas.addEventListener('mousemove', (e) => {{
         if (selectedYear !== null || selectedSeries !== null) return;
         const rect = canvas.getBoundingClientRect();
-        const mx = e.clientX - rect.left;
-        const my = e.clientY - rect.top;
+        const mx = (e.clientX - rect.left) * (width / Math.max(rect.width, 1));
+        const my = (e.clientY - rect.top) * (height / Math.max(rect.height, 1));
         if (mx < margin.left || mx > margin.left + plotW || my < margin.top || my > margin.top + plotH) {{
           return;
         }}
