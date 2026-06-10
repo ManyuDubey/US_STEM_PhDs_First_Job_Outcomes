@@ -30,6 +30,17 @@
     .stat .label { color: var(--muted); font-size: 13px; }
     .controls { display: flex; gap: 14px; flex-wrap: wrap; align-items: end; margin: 0 0 16px; }
     .control { display: flex; flex-direction: column; gap: 6px; min-width: 240px; }
+    .year-controls { display: flex; gap: 14px; flex: 1 1 520px; min-width: min(520px, 100%); }
+    .year-control { flex: 1 1 0; min-width: 0; }
+    .year-control input[type="range"] { box-sizing: border-box; width: 100%; }
+    .migration-controls { display: grid; grid-template-columns: 170px 240px minmax(260px, 360px) 520px; align-items: end; justify-content: start; }
+    .migration-controls .control { min-width: 0; }
+    .migration-controls select { box-sizing: border-box; width: 100%; }
+    .migration-controls .year-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); width: 520px; max-width: 100%; min-width: 0; }
+    @media (max-width: 1180px) {
+      .migration-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .migration-controls .year-controls { grid-column: 1 / -1; }
+    }
     .title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
     .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
     .range-value { color: var(--muted); font-size: 13px; }
@@ -92,6 +103,7 @@
         <canvas id="country-chart" class="chart"></canvas>
         <div id="tooltip" class="tooltip"></div>
       </div>
+      <div id="point-details" class="note">Click a line to isolate that country. Click a point to pin its year, count, and share.</div>
       <div class="note">Uses Carnegie PhD university names from codex_data/goid_user_id_nsf.csv. Graphs are limited to graduation years through 2019. Social sciences, education, psychology, business, humanities and arts, and other non-science fields are excluded. United States is omitted from the plotted country series so international origins are visible. The denominator is all PhDs in the selected university, field, and graduation year with an identified bachelor country, including United States bachelor degrees.</div>
     </div>
     <div class="card">
@@ -114,7 +126,10 @@
     const startLabel = document.getElementById('year-start-label');
     const endLabel = document.getElementById('year-end-label');
     const tooltip = document.getElementById('tooltip');
+    const pointDetails = document.getElementById('point-details');
     let hoverPoints = [];
+    let hoverSegments = [];
+    let selectedSeries = null;
 
     function unpackUniversity(u) {
       if (!u) return null;
@@ -161,12 +176,12 @@
       ].map(([label,value]) => `<div class="stat"><div class="value">${value}</div><div class="label">${label}</div></div>`).join('');
     }
     function fillUniversities() {
-      universitySelect.innerHTML = universities.map((u, i) => `<option value="${i}">${u[0]} (${fmt(u[2])})</option>`).join('');
+      universitySelect.innerHTML = universities.map((u, i) => `<option value="${i}">${u[0]}</option>`).join('');
     }
     function fillFields() {
       const groups = groupsForSelectedView();
       fieldSelect.disabled = viewSelect.value === 'overall';
-      fieldSelect.innerHTML = groups.map((g, i) => `<option value="${i}">${g.field} (${fmt(g.n_with_country)})</option>`).join('');
+      fieldSelect.innerHTML = groups.map((g, i) => `<option value="${i}">${g.field}</option>`).join('');
       if (!groups.length) {
         fieldSelect.innerHTML = '<option value="0">No data</option>';
       }
@@ -230,6 +245,7 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, width, height);
       hoverPoints = [];
+      hoverSegments = [];
       if (!group || !group.series.length) {
         ctx.fillStyle = '#666';
         ctx.font = '15px Georgia';
@@ -270,21 +286,38 @@
         if (i % tickEvery !== 0 && i !== years.length - 1) return;
         ctx.fillText(String(year), x(year) - 13, height - 18);
       });
+      const selectedVisible = selectedSeries && series.some(s => s.name === selectedSeries);
+      if (!selectedVisible) selectedSeries = null;
+      const drawSeries = selectedSeries
+        ? [...series.filter(s => s.name !== selectedSeries), ...series.filter(s => s.name === selectedSeries)]
+        : series;
       const labelItems = [];
-      series.forEach((s, idx) => {
-        ctx.strokeStyle = s.color;
-        ctx.lineWidth = 2.3;
+      drawSeries.forEach((s, idx) => {
+        const isSelected = !selectedSeries || s.name === selectedSeries;
+        ctx.globalAlpha = isSelected ? 1 : 0.22;
+        ctx.strokeStyle = isSelected ? s.color : '#3f3f3f';
+        ctx.lineWidth = isSelected ? 3.2 : 1.6;
         ctx.beginPath();
         s.values.forEach((v, i) => {
           const xx = x(v.year), yy = y(v.share);
           if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy);
+          if (i) {
+            const prev = s.values[i - 1];
+            hoverSegments.push({
+              x1: x(prev.year),
+              y1: y(prev.share),
+              x2: xx,
+              y2: yy,
+              series: s.name
+            });
+          }
         });
         ctx.stroke();
-        ctx.fillStyle = s.color;
+        ctx.fillStyle = isSelected ? s.color : '#3f3f3f';
         s.values.forEach((v) => {
           const xx = x(v.year), yy = y(v.share);
           ctx.beginPath();
-          ctx.arc(xx, yy, 3, 0, Math.PI * 2);
+          ctx.arc(xx, yy, isSelected ? 3.6 : 2.4, 0, Math.PI * 2);
           ctx.fill();
           hoverPoints.push({x: xx, y: yy, series: s.name, year: v.year, share: v.share, count: v.count, total: v.total});
         });
@@ -292,14 +325,17 @@
         if (labelValue) {
           labelItems.push({
             label: s.label,
-            color: s.color,
+            color: isSelected ? s.color : '#3f3f3f',
+            alpha: isSelected ? 1 : 0.35,
             x: x(labelValue.year),
             targetY: y(labelValue.share)
           });
         }
       });
+      ctx.globalAlpha = 1;
       const labelX = width - margin.right + 18;
       layoutEndLabels(labelItems, margin.top + 8, height - margin.bottom - 8, 18).forEach(item => {
+        ctx.globalAlpha = item.alpha;
         ctx.strokeStyle = item.color;
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -309,6 +345,7 @@
         ctx.fillStyle = item.color;
         ctx.fillText(item.label, labelX, item.y + 4);
       });
+      ctx.globalAlpha = 1;
     }
     function renderTable(group, yearStart, yearEnd) {
       if (!group) {
@@ -340,8 +377,16 @@
       document.getElementById('chart-subtitle').textContent = group ? `${viewSelect.options[viewSelect.selectedIndex].text} · ${group.field} · ${fmt(group.n_with_country)} PhDs with bachelor country` : '';
       drawChart(group, start, end);
       renderTable(group, start, end);
+      renderPointDetails(null);
     }
-    document.getElementById('country-chart').addEventListener('mousemove', (event) => {
+    function renderPointDetails(point) {
+      if (!point) {
+        pointDetails.innerHTML = 'Click a line to isolate that country. Click a point to pin its year, count, and share.';
+        return;
+      }
+      pointDetails.innerHTML = `<strong>${point.series} · ${point.year}</strong>: ${pct(point.share)} · ${fmt(point.count)} / ${fmt(point.total)} PhDs with bachelor country`;
+    }
+    function nearestPoint(event) {
       const rect = event.target.getBoundingClientRect();
       const mx = event.clientX - rect.left, my = event.clientY - rect.top;
       let best = null, bestDist = 9999;
@@ -349,19 +394,53 @@
         const d = Math.hypot(mx - p.x, my - p.y);
         if (d < bestDist) { best = p; bestDist = d; }
       });
+      return {point: best, distance: bestDist, x: mx, y: my};
+    }
+    function distanceToSegment(px, py, seg) {
+      const dx = seg.x2 - seg.x1;
+      const dy = seg.y2 - seg.y1;
+      const lenSq = dx * dx + dy * dy;
+      if (!lenSq) return Math.hypot(px - seg.x1, py - seg.y1);
+      const t = Math.max(0, Math.min(1, ((px - seg.x1) * dx + (py - seg.y1) * dy) / lenSq));
+      return Math.hypot(px - (seg.x1 + t * dx), py - (seg.y1 + t * dy));
+    }
+    function nearestSeriesHit(event) {
+      const pointHit = nearestPoint(event);
+      let bestSegment = null, bestSegmentDist = 9999;
+      hoverSegments.forEach(seg => {
+        const d = distanceToSegment(pointHit.x, pointHit.y, seg);
+        if (d < bestSegmentDist) { bestSegment = seg; bestSegmentDist = d; }
+      });
+      return {
+        ...pointHit,
+        segment: bestSegment,
+        segmentDistance: bestSegmentDist,
+        series: pointHit.distance <= 14 && pointHit.point ? pointHit.point.series : (bestSegmentDist <= 8 && bestSegment ? bestSegment.series : null)
+      };
+    }
+    document.getElementById('country-chart').addEventListener('mousemove', (event) => {
+      const hit = nearestPoint(event);
+      const best = hit.point;
+      const bestDist = hit.distance;
       if (!best || bestDist > 12) {
         tooltip.style.opacity = 0;
         return;
       }
-      tooltip.innerHTML = `<strong>${best.series}</strong><br>${best.year}: ${pct(best.share)}<br>${fmt(best.count)} / ${fmt(best.total)}`;
-      tooltip.style.left = mx + 'px';
-      tooltip.style.top = my + 'px';
+      tooltip.innerHTML = `<strong>${best.series}</strong><br>${best.year}: ${pct(best.share)}<br>${fmt(best.count)} / ${fmt(best.total)}<br>Click to isolate`;
+      tooltip.style.left = hit.x + 'px';
+      tooltip.style.top = hit.y + 'px';
       tooltip.style.opacity = 1;
     });
+    document.getElementById('country-chart').addEventListener('click', (event) => {
+      const hit = nearestSeriesHit(event);
+      selectedSeries = hit.series;
+      render();
+      if (hit.point && hit.distance <= 14) renderPointDetails(hit.point);
+    });
     document.getElementById('country-chart').addEventListener('mouseleave', () => tooltip.style.opacity = 0);
-    universitySelect.addEventListener('change', fillFields);
-    viewSelect.addEventListener('change', fillFields);
-    fieldSelect.addEventListener('change', updateYearBounds);
+    universitySelect.addEventListener('change', () => { selectedSeries = null; fillFields(); });
+    viewSelect.addEventListener('change', () => { selectedSeries = null; fillFields(); });
+    fieldSelect.addEventListener('change', () => { selectedSeries = null; updateYearBounds(); });
     startInput.addEventListener('input', () => syncYears('start'));
     endInput.addEventListener('input', () => syncYears('end'));
     window.addEventListener('resize', render);

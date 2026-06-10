@@ -682,7 +682,11 @@ def write_page(payload: dict[str, object]) -> None:
       </div>
       <div id="chart-title" class="title"></div>
       <div id="chart-subtitle" class="subtitle"></div>
-      <canvas id="coverage-chart" class="chart"></canvas>
+      <div class="chart-box">
+        <canvas id="coverage-chart" class="chart"></canvas>
+        <div id="tooltip" class="tooltip"></div>
+      </div>
+      <div id="point-details" class="note">Click a line to isolate that source. Click a point to pin the count for that year.</div>
       <div class="note">Counts use graduation years 1980-2019 and the same included field universe as the other dashboards. Excluded fields are social sciences, education, psychology, business, humanities/arts, other non-science and engineering, and blank broad-field rows. ProQuest counts distinct pq_goid_row values, falling back to goid only when pq_goid_row is missing. Matched ProQuest counts distinct matched goid values, falling back to rev_user_id only when goid is missing. NCSES institutions are mapped to Carnegie names by normalized exact/variant matches, selected manual aliases, unique prefix matches, and conservative fuzzy matches.</div>
     </div>
     <div class="card">
@@ -708,6 +712,11 @@ def write_page(payload: dict[str, object]) -> None:
     const institutionSelect = document.getElementById('institution-select');
     const viewSelect = document.getElementById('view-select');
     const fieldSelect = document.getElementById('field-select');
+    const tooltip = document.getElementById('tooltip');
+    const pointDetails = document.getElementById('point-details');
+    let hoverPoints = [];
+    let hoverSegments = [];
+    let selectedSeries = null;
 
     function table(headers, rows) {{
       return '<table><thead><tr>' + headers.map(h => `<th>${{h}}</th>`).join('') + '</tr></thead><tbody>' +
@@ -735,14 +744,13 @@ def write_page(payload: dict[str, object]) -> None:
     }}
     function fillInstitutions() {{
       institutionSelect.innerHTML = institutions.map((u, i) => {{
-        const overall = (((u.views || {{}}).overall || [])[0] || {{}});
-        return `<option value="${{i}}">${{u.name}} (${{fmt(overall.ncses || 0)}} NCSES)</option>`;
+        return `<option value="${{i}}">${{u.name}}</option>`;
       }}).join('');
     }}
     function fillFields() {{
       const groups = selectedGroups();
       fieldSelect.disabled = viewSelect.value === 'overall';
-      fieldSelect.innerHTML = groups.map((g, i) => `<option value="${{i}}">${{g.field}} (${{fmt(g.ncses)}} NCSES)</option>`).join('');
+      fieldSelect.innerHTML = groups.map((g, i) => `<option value="${{i}}">${{g.field}}</option>`).join('');
       if (!groups.length) fieldSelect.innerHTML = '<option value="0">No data</option>';
       render();
     }}
@@ -753,6 +761,8 @@ def write_page(payload: dict[str, object]) -> None:
       const w = canvas.clientWidth || 1100, h = canvas.clientHeight || 460;
       canvas.width = w * dpr; canvas.height = h * dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
       ctx.clearRect(0,0,w,h);
+      hoverPoints = [];
+      hoverSegments = [];
       if (!group || !group.years || !group.years.length) {{
         ctx.fillStyle = '#666'; ctx.font = '15px Georgia';
         ctx.fillText('No comparable data for this selection.', 20, 40);
@@ -773,15 +783,37 @@ def write_page(payload: dict[str, object]) -> None:
       }}
       const colors = {{ncses:'#c43c39', proquest:'#1f4e79', matched:'#5b8e7d'}};
       const labels = {{ncses:'NCSES', proquest:'ProQuest', matched:'Matched ProQuest'}};
-      ['ncses','proquest','matched'].forEach(key => {{
-        ctx.strokeStyle = colors[key]; ctx.lineWidth = 2.5; ctx.beginPath();
-        rows.forEach((r,i) => {{ const xx=x(r.year), yy=y(r[key]); if(i) ctx.lineTo(xx,yy); else ctx.moveTo(xx,yy); }});
+      const keys = ['ncses','proquest','matched'];
+      const selectedVisible = selectedSeries && keys.includes(selectedSeries);
+      if (!selectedVisible) selectedSeries = null;
+      const drawKeys = selectedSeries ? [...keys.filter(k => k !== selectedSeries), selectedSeries] : keys;
+      drawKeys.forEach(key => {{
+        const isSelected = !selectedSeries || key === selectedSeries;
+        ctx.globalAlpha = isSelected ? 1 : 0.22;
+        ctx.strokeStyle = isSelected ? colors[key] : '#3f3f3f';
+        ctx.lineWidth = isSelected ? 3.4 : 1.6;
+        ctx.beginPath();
+        rows.forEach((r,i) => {{
+          const xx=x(r.year), yy=y(r[key]);
+          if(i) ctx.lineTo(xx,yy); else ctx.moveTo(xx,yy);
+          if (i) {{
+            const prev = rows[i - 1];
+            hoverSegments.push({{x1:x(prev.year), y1:y(prev[key]), x2:xx, y2:yy, series:key}});
+          }}
+        }});
         ctx.stroke();
-        ctx.fillStyle = colors[key];
-        rows.forEach(r => {{ ctx.beginPath(); ctx.arc(x(r.year), y(r[key]), 2.6, 0, Math.PI*2); ctx.fill(); }});
+        ctx.fillStyle = isSelected ? colors[key] : '#3f3f3f';
+        rows.forEach(r => {{
+          const xx = x(r.year), yy = y(r[key]);
+          ctx.beginPath(); ctx.arc(xx, yy, isSelected ? 3.5 : 2.4, 0, Math.PI*2); ctx.fill();
+          hoverPoints.push({{x:xx, y:yy, series:key, label:labels[key], year:r.year, count:r[key]}});
+        }});
         const last = rows[rows.length - 1];
-        ctx.textAlign = 'left'; ctx.fillText(labels[key], w - margin.right + 18, y(last[key]) + 4);
+        ctx.textAlign = 'left';
+        ctx.fillStyle = isSelected ? colors[key] : '#3f3f3f';
+        ctx.fillText(labels[key], w - margin.right + 18, y(last[key]) + 4);
       }});
+      ctx.globalAlpha = 1;
       const tickEvery = Math.max(1, Math.ceil(years.length / 8));
       ctx.fillStyle = '#666'; ctx.textAlign = 'center';
       years.forEach((year, i) => {{ if (i % tickEvery === 0 || i === years.length - 1) ctx.fillText(String(year), x(year), h - 18); }});
@@ -792,6 +824,46 @@ def write_page(payload: dict[str, object]) -> None:
       document.getElementById('chart-title').textContent = inst ? inst.name : '';
       document.getElementById('chart-subtitle').textContent = group ? `${{viewSelect.options[viewSelect.selectedIndex].text}} · ${{group.field}} · PQ/NCSES ${{pct(group.pq_ncses_coverage)}} · Matched/NCSES ${{pct(group.matched_ncses_coverage)}}` : '';
       draw(group);
+      renderPointDetails(null);
+    }}
+    function renderPointDetails(point) {{
+      if (!point) {{
+        pointDetails.innerHTML = 'Click a line to isolate that source. Click a point to pin the count for that year.';
+        return;
+      }}
+      pointDetails.innerHTML = `<strong>${{point.label}} · ${{point.year}}</strong>: ${{fmt(point.count)}} PhDs`;
+    }}
+    function nearestPoint(event) {{
+      const rect = event.target.getBoundingClientRect();
+      const mx = event.clientX - rect.left, my = event.clientY - rect.top;
+      let best = null, bestDist = 9999;
+      hoverPoints.forEach(p => {{
+        const d = Math.hypot(mx - p.x, my - p.y);
+        if (d < bestDist) {{ best = p; bestDist = d; }}
+      }});
+      return {{point: best, distance: bestDist, x: mx, y: my}};
+    }}
+    function distanceToSegment(px, py, seg) {{
+      const dx = seg.x2 - seg.x1;
+      const dy = seg.y2 - seg.y1;
+      const lenSq = dx * dx + dy * dy;
+      if (!lenSq) return Math.hypot(px - seg.x1, py - seg.y1);
+      const t = Math.max(0, Math.min(1, ((px - seg.x1) * dx + (py - seg.y1) * dy) / lenSq));
+      return Math.hypot(px - (seg.x1 + t * dx), py - (seg.y1 + t * dy));
+    }}
+    function nearestSeriesHit(event) {{
+      const pointHit = nearestPoint(event);
+      let bestSegment = null, bestSegmentDist = 9999;
+      hoverSegments.forEach(seg => {{
+        const d = distanceToSegment(pointHit.x, pointHit.y, seg);
+        if (d < bestSegmentDist) {{ bestSegment = seg; bestSegmentDist = d; }}
+      }});
+      return {{
+        ...pointHit,
+        segment: bestSegment,
+        segmentDistance: bestSegmentDist,
+        series: pointHit.distance <= 14 && pointHit.point ? pointHit.point.series : (bestSegmentDist <= 8 && bestSegment ? bestSegment.series : null)
+      }};
     }}
     function renderTables() {{
       document.getElementById('field-table').innerHTML = table(
@@ -807,9 +879,27 @@ def write_page(payload: dict[str, object]) -> None:
         DATA.page.overmatches.map(r => [r.institution, fmt(r.ncses), fmt(r.proquest), fmt(r.matched), pct(r.pq_ncses_coverage), pct(r.matched_ncses_coverage)])
       );
     }}
-    institutionSelect.addEventListener('change', fillFields);
-    viewSelect.addEventListener('change', fillFields);
-    fieldSelect.addEventListener('change', render);
+    document.getElementById('coverage-chart').addEventListener('mousemove', (event) => {{
+      const hit = nearestPoint(event);
+      if (!hit.point || hit.distance > 12) {{
+        tooltip.style.opacity = 0;
+        return;
+      }}
+      tooltip.innerHTML = `<strong>${{hit.point.label}}</strong><br>${{hit.point.year}}: ${{fmt(hit.point.count)}}<br>Click to isolate`;
+      tooltip.style.left = hit.x + 'px';
+      tooltip.style.top = hit.y + 'px';
+      tooltip.style.opacity = 1;
+    }});
+    document.getElementById('coverage-chart').addEventListener('click', (event) => {{
+      const hit = nearestSeriesHit(event);
+      selectedSeries = hit.series;
+      render();
+      if (hit.point && hit.distance <= 14) renderPointDetails(hit.point);
+    }});
+    document.getElementById('coverage-chart').addEventListener('mouseleave', () => tooltip.style.opacity = 0);
+    institutionSelect.addEventListener('change', () => {{ selectedSeries = null; fillFields(); }});
+    viewSelect.addEventListener('change', () => {{ selectedSeries = null; fillFields(); }});
+    fieldSelect.addEventListener('change', () => {{ selectedSeries = null; render(); }});
     window.addEventListener('resize', render);
     setStats();
     fillInstitutions();

@@ -495,7 +495,7 @@ def write_page(payload: dict[str, object]) -> None:
     body = """
     <div class="card"><div id="stats" class="stats"></div></div>
     <div class="card">
-      <div class="controls">
+      <div class="controls migration-controls">
         <div class="control">
           <label for="horizon-select">Timing</label>
           <select id="horizon-select"></select>

@@ -33,6 +33,14 @@
     .year-controls { display: flex; gap: 14px; flex: 1 1 520px; min-width: min(520px, 100%); }
     .year-control { flex: 1 1 0; min-width: 0; }
     .year-control input[type="range"] { box-sizing: border-box; width: 100%; }
+    .migration-controls { display: grid; grid-template-columns: 170px 240px minmax(260px, 360px) 520px; align-items: end; justify-content: start; }
+    .migration-controls .control { min-width: 0; }
+    .migration-controls select { box-sizing: border-box; width: 100%; }
+    .migration-controls .year-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); width: 520px; max-width: 100%; min-width: 0; }
+    @media (max-width: 1180px) {
+      .migration-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .migration-controls .year-controls { grid-column: 1 / -1; }
+    }
     .title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
     .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
     .range-value { color: var(--muted); font-size: 13px; }
@@ -61,7 +69,7 @@
     
     <div class="card"><div id="stats" class="stats"></div></div>
     <div class="card">
-      <div class="controls">
+      <div class="controls migration-controls">
         <div class="control">
           <label for="horizon-select">Timing</label>
           <select id="horizon-select"></select>

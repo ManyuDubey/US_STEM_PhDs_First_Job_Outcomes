@@ -367,6 +367,7 @@
           if (!value) return null;
           const plotValue = mode === 'count' ? (value.value || 0) : value.share;
           return {
+            series: s.name,
             color: s.color,
             label: s.label,
             share: value.share,
@@ -377,7 +378,28 @@
         }).filter(Boolean);
         return {year, x: xPos(year), points};
       });
+      const seriesLookup = filteredSeries.map((s) => {
+        const points = s.values.map((v) => {
+          const plotValue = mode === 'count' ? (v.value || 0) : v.share;
+          return {
+            series: s.name,
+            color: s.color,
+            label: s.label,
+            year: v.year,
+            share: v.share,
+            value: v.value,
+            x: xPos(v.year),
+            y: yPos(plotValue)
+          };
+        });
+        const segments = [];
+        for (let i = 1; i < points.length; i++) {
+          segments.push({...points[i], x1: points[i - 1].x, y1: points[i - 1].y, x2: points[i].x, y2: points[i].y});
+        }
+        return {...s, points, segments};
+      });
       let selectedYear = null;
+      let selectedSeries = null;
 
       function clearOverlay() {
         overlayCtx.clearRect(0, 0, width, height);
@@ -385,28 +407,63 @@
 
       function renderSelection(yearEntry) {
         clearOverlay();
-        if (!yearEntry) {
+        if (!yearEntry && !selectedSeries) {
           tooltip.style.opacity = '0';
           selectedYear = null;
           return;
         }
-        selectedYear = yearEntry.year;
-        overlayCtx.strokeStyle = 'rgba(60, 60, 60, 0.35)';
-        overlayCtx.lineWidth = 1.2;
-        overlayCtx.beginPath();
-        overlayCtx.moveTo(yearEntry.x, margin.top);
-        overlayCtx.lineTo(yearEntry.x, margin.top + plotH);
-        overlayCtx.stroke();
+        selectedYear = yearEntry ? yearEntry.year : null;
+        if (selectedSeries) {
+          const selected = seriesLookup.find((s) => s.name === selectedSeries);
+          if (selected) {
+            overlayCtx.fillStyle = 'rgba(255, 253, 248, 0.68)';
+            overlayCtx.fillRect(margin.left, margin.top, plotW, plotH);
+            overlayCtx.strokeStyle = selected.color;
+            overlayCtx.lineWidth = 4;
+            overlayCtx.beginPath();
+            selected.points.forEach((point, i) => {
+              if (i) overlayCtx.lineTo(point.x, point.y); else overlayCtx.moveTo(point.x, point.y);
+            });
+            overlayCtx.stroke();
+            overlayCtx.fillStyle = selected.color;
+            selected.points.forEach((point) => {
+              overlayCtx.beginPath();
+              overlayCtx.arc(point.x, point.y, 4.8, 0, Math.PI * 2);
+              overlayCtx.fill();
+              overlayCtx.strokeStyle = '#fff';
+              overlayCtx.lineWidth = 1.5;
+              overlayCtx.stroke();
+            });
+          }
+        }
 
-        yearEntry.points.forEach((point) => {
-          overlayCtx.fillStyle = point.color;
+        if (yearEntry) {
+          overlayCtx.strokeStyle = 'rgba(60, 60, 60, 0.35)';
+          overlayCtx.lineWidth = 1.2;
           overlayCtx.beginPath();
-          overlayCtx.arc(point.x, point.y, 6, 0, Math.PI * 2);
-          overlayCtx.fill();
-          overlayCtx.strokeStyle = '#fff';
-          overlayCtx.lineWidth = 2;
+          overlayCtx.moveTo(yearEntry.x, margin.top);
+          overlayCtx.lineTo(yearEntry.x, margin.top + plotH);
           overlayCtx.stroke();
-        });
+
+          yearEntry.points.forEach((point) => {
+            overlayCtx.fillStyle = point.color;
+            overlayCtx.beginPath();
+            overlayCtx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+            overlayCtx.fill();
+            overlayCtx.strokeStyle = '#fff';
+            overlayCtx.lineWidth = 2;
+            overlayCtx.stroke();
+          });
+        }
+
+        if (!yearEntry) {
+          const selected = seriesLookup.find((s) => s.name === selectedSeries);
+          tooltip.innerHTML = selected ? `<strong>${selected.label}</strong><br>Click a point for year details<br>Click empty chart space to clear` : '';
+          tooltip.style.opacity = selected ? '1' : '0';
+          tooltip.style.left = (margin.left + 16) + 'px';
+          tooltip.style.top = (margin.top + 8) + 'px';
+          return;
+        }
 
         const sortedPoints = [...yearEntry.points].sort((a, b) => {
           const aVal = mode === 'count' ? (a.value || 0) : a.share;
@@ -450,34 +507,80 @@
         }
         return bestYear;
       }
+      function nearestPoint(clientX, clientY) {
+        const rect = canvas.getBoundingClientRect();
+        const mx = clientX - rect.left;
+        const my = clientY - rect.top;
+        let best = null;
+        let bestDist = Infinity;
+        yearLookup.forEach((yearEntry) => {
+          yearEntry.points.forEach((point) => {
+            const dist = Math.hypot(mx - point.x, my - point.y);
+            if (dist < bestDist) {
+              bestDist = dist;
+              best = {point, yearEntry};
+            }
+          });
+        });
+        return {...best, distance: bestDist, x: mx, y: my};
+      }
+      function distanceToSegment(px, py, seg) {
+        const dx = seg.x2 - seg.x1;
+        const dy = seg.y2 - seg.y1;
+        const lenSq = dx * dx + dy * dy;
+        if (!lenSq) return Math.hypot(px - seg.x1, py - seg.y1);
+        const t = Math.max(0, Math.min(1, ((px - seg.x1) * dx + (py - seg.y1) * dy) / lenSq));
+        return Math.hypot(px - (seg.x1 + t * dx), py - (seg.y1 + t * dy));
+      }
+      function nearestSeriesHit(clientX, clientY) {
+        const pointHit = nearestPoint(clientX, clientY);
+        let bestSeries = null;
+        let bestDist = Infinity;
+        seriesLookup.forEach((s) => {
+          s.segments.forEach((seg) => {
+            const dist = distanceToSegment(pointHit.x, pointHit.y, seg);
+            if (dist < bestDist) {
+              bestDist = dist;
+              bestSeries = s.name;
+            }
+          });
+        });
+        if (pointHit.point && pointHit.distance <= 14) {
+          return {series: pointHit.point.series, yearEntry: pointHit.yearEntry, point: pointHit.point, distance: pointHit.distance};
+        }
+        if (bestSeries && bestDist <= 9) {
+          return {series: bestSeries, yearEntry: null, point: null, distance: bestDist};
+        }
+        return {series: null, yearEntry: null, point: null, distance: Infinity};
+      }
 
       canvas.addEventListener('click', (e) => {
-        const bestYear = nearestYearEntry(e.clientX, e.clientY);
-        if (!bestYear) {
+        const hit = nearestSeriesHit(e.clientX, e.clientY);
+        if (!hit.series) {
+          selectedSeries = null;
           renderSelection(null);
           return;
         }
-        if (selectedYear === bestYear.year) {
-          renderSelection(null);
-          return;
-        }
-        renderSelection(bestYear);
+        selectedSeries = hit.series;
+        renderSelection(hit.yearEntry);
       });
 
       card.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
+          selectedSeries = null;
           renderSelection(null);
         }
       });
 
       document.addEventListener('click', (e) => {
         if (!card.contains(e.target)) {
+          selectedSeries = null;
           renderSelection(null);
         }
       });
 
       canvas.addEventListener('mousemove', (e) => {
-        if (selectedYear !== null) return;
+        if (selectedYear !== null || selectedSeries !== null) return;
         const rect = canvas.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const my = e.clientY - rect.top;
@@ -489,11 +592,11 @@
           tooltip.style.opacity = '1';
           tooltip.style.left = Math.min(bestYear.x + 14, width - 180) + 'px';
           tooltip.style.top = (margin.top + 8) + 'px';
-          tooltip.innerHTML = `<strong>Click to pin</strong><br>Graduation year: ${bestYear.year}`;
+          tooltip.innerHTML = `<strong>Click a line to isolate</strong><br>Click a point to pin details`;
         }
       });
       canvas.addEventListener('mouseleave', () => {
-        if (selectedYear === null) {
+        if (selectedYear === null && selectedSeries === null) {
           tooltip.style.opacity = '0';
         }
       });
