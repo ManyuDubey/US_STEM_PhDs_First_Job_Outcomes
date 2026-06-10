@@ -1627,6 +1627,7 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
             series: s.name,
             color: s.color,
             label: s.label,
+            year,
             share: value.share,
             value: value.value,
             x: xPos(year),
@@ -1746,28 +1747,13 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
         tooltip.style.top = top + 'px';
       }}
 
-      function nearestYearEntry(clientX, clientY) {{
-        const rect = canvas.getBoundingClientRect();
-        const mx = (clientX - rect.left) * (width / Math.max(rect.width, 1));
-        const my = (clientY - rect.top) * (height / Math.max(rect.height, 1));
-        if (mx < margin.left || mx > margin.left + plotW || my < margin.top || my > margin.top + plotH) {{
-          return null;
-        }}
-        let bestYear = null;
-        let bestDist = Infinity;
-        for (const yearEntry of yearLookup) {{
-          const dist = Math.abs(mx - yearEntry.x);
-          if (dist < bestDist) {{
-            bestDist = dist;
-            bestYear = yearEntry;
-          }}
-        }}
-        return bestYear;
-      }}
       function nearestPoint(clientX, clientY) {{
         const rect = canvas.getBoundingClientRect();
         const mx = (clientX - rect.left) * (width / Math.max(rect.width, 1));
         const my = (clientY - rect.top) * (height / Math.max(rect.height, 1));
+        if (mx < margin.left - 24 || mx > margin.left + plotW + 24 || my < margin.top - 24 || my > margin.top + plotH + 24) {{
+          return {{point: null, yearEntry: null, distance: Infinity, x: mx, y: my}};
+        }}
         let best = null;
         let bestDist = Infinity;
         yearLookup.forEach((yearEntry) => {{
@@ -1802,10 +1788,10 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
             }}
           }});
         }});
-        if (pointHit.point && pointHit.distance <= 14) {{
+        if (pointHit.point && pointHit.distance <= 24) {{
           return {{series: pointHit.point.series, yearEntry: pointHit.yearEntry, point: pointHit.point, distance: pointHit.distance}};
         }}
-        if (bestSeries && bestDist <= 9) {{
+        if (bestSeries && bestDist <= 12) {{
           return {{series: bestSeries, yearEntry: null, point: null, distance: bestDist}};
         }}
         return {{series: null, yearEntry: null, point: null, distance: Infinity}};
@@ -1838,18 +1824,16 @@ def write_dashboard_html(payload: Dict[str, object]) -> None:
 
       canvas.addEventListener('mousemove', (e) => {{
         if (selectedYear !== null || selectedSeries !== null) return;
-        const rect = canvas.getBoundingClientRect();
-        const mx = (e.clientX - rect.left) * (width / Math.max(rect.width, 1));
-        const my = (e.clientY - rect.top) * (height / Math.max(rect.height, 1));
-        if (mx < margin.left || mx > margin.left + plotW || my < margin.top || my > margin.top + plotH) {{
-          return;
-        }}
-        const bestYear = nearestYearEntry(e.clientX, e.clientY);
-        if (bestYear) {{
+        const hit = nearestSeriesHit(e.clientX, e.clientY);
+        if (hit.series) {{
           tooltip.style.opacity = '1';
-          tooltip.style.left = Math.min(bestYear.x + 14, width - 180) + 'px';
-          tooltip.style.top = (margin.top + 8) + 'px';
-          tooltip.innerHTML = `<strong>Click a line to isolate</strong><br>Click a point to pin details`;
+          tooltip.style.left = Math.min(hit.point ? hit.point.x + 14 : width - margin.right + 12, width - 220) + 'px';
+          tooltip.style.top = (hit.point ? Math.max(8, hit.point.y - 24) : margin.top + 8) + 'px';
+          tooltip.innerHTML = hit.point
+            ? `<strong>${{hit.point.label}}</strong><br>${{hit.point.year}}: click to pin details`
+            : `<strong>Click to isolate line</strong>`;
+        }} else {{
+          tooltip.style.opacity = '0';
         }}
       }});
       canvas.addEventListener('mouseleave', () => {{
